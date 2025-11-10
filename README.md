@@ -26,9 +26,9 @@ Before you begin, ensure you have the following software installed:
 1.  **For first-time use, please download the installation package for TCSAS-Devtools from the console in advance.**
 2.  **After installation, please open it to complete the login process and enable the service port.**
 
-![login pannel ](images/image.png)
+![login pannel ](https://github.com/TCMPP-Team/tcsas-devtools-mcp-server/raw/main/images/image.png)
 Settings - Security - Enable
-![enable Service port](images/setting.png)
+![enable Service port](https://github.com/TCMPP-Team/tcsas-devtools-mcp-server/raw/main/images/setting.png)
 
 **Ensure the above steps are completed. Then you can configure the MCP server in your Code Agent and start using it.**
 
@@ -56,7 +56,7 @@ You can integrate this server with any AI assistant that supports custom MCP ser
 
     **Illustration**: (A screenshot of the Cursor settings panel could be like this, showing the user entering the command in the mcp.json)
 
-    ![Cursor MCP Configuration](images/cursor.png)
+    ![Cursor MCP Configuration](https://github.com/TCMPP-Team/tcsas-devtools-mcp-server/raw/main/images/cursor.png)
 
 5.  **Connect and Start Using**: After adding, Cursor will connect to your local server. Now you can interact with it in the chat. For example, you can type:
 
