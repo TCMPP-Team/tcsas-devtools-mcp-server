@@ -36,23 +36,25 @@ Settings - Security - Enable
 
 You can integrate this server with any AI assistant that supports custom MCP servers. Here are the steps to configure it in Cursor:
 
-1.  **Start the Server**: First, run the `tcsas-mcp` server on your local machine following the steps above.
+1.  **Open Cursor Settings**: In Cursor, find the settings for AI integration. This is usually located in `Settings` > `Tools & MCP` or a similar configuration area for managing AI providers.
 
-2.  **Open Cursor Settings**: In Cursor, find the settings for AI integration. This is usually located in `Settings` > `Extensions` > `Claude` or a similar configuration area for managing AI providers.
+2.  **Add Custom MCP Service**: Look for an option like "Add Model Context Provider" or "MCP Server" and click "Add".
 
-3.  **Add Custom MCP Service**: Look for an option like "Add Model Context Provider" or "MCP Server" and click "Add".
+3.  **Enter Command**: For example:
 
-4.  **Enter Command**: For example:
+    ```json
+    {
+      "tcsas-devtools-mcp-server": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "tcsas-devtools-mcp-server@latest"
+        ]
+      }
+    }
+    ```
 
-    `"tcsas-devtools-mcp-server": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "tcsas-devtools-mcp-server@latest"
-      ]
-    }```json
-
-    **Illustration**: (A screenshot of the Cursor settings panel could be placed here, showing the user entering the command in the "Command" field)
+    **Illustration**: (A screenshot of the Cursor settings panel could be like this, showing the user entering the command in the mcp.json)
 
     ![Cursor MCP Configuration](images/cursor.png)
 
