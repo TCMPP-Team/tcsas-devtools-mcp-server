@@ -197,6 +197,23 @@ async function launchApp(appName: string) {
   }
 }
 
+
+async function getAppSupportPath(appName: string): Promise<string | null> {
+  const platform = os.platform();
+  const homeDir = os.homedir();
+
+  let supportDir: string;
+  if (platform === 'darwin') {
+    supportDir = path.join(homeDir, 'Library', 'Application Support');
+  } else if (platform === 'win32') {
+    supportDir = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
+  } else {
+    console.warn(`Unsupported platform: ${platform} for getAppSupportPath`);
+    return null;
+  }
+  return path.join(supportDir, appName);
+}
+
 async function getCliPath(appName: string): Promise<string | null> {
   const appPath = await findAppOnMacOrWin(appName);
   if (!appPath) {
@@ -229,4 +246,4 @@ async function getCliPath(appName: string): Promise<string | null> {
   return null;
 }
 
-export { findAppOnMacOrWin, launchApp, sleep, getCliPath }
+export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath }
