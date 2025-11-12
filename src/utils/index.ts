@@ -2,8 +2,10 @@
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
+import log from '../utils/log.js';
 import { promisify } from 'util';
 import { exec, execFile, spawn } from 'child_process';
+import WinReg from 'winreg';
 const execP = promisify(exec);
 const fsp = fs.promises;
 
@@ -87,10 +89,78 @@ const findExeRecursive = async (dir, exeName, maxDepth = 2) => {
   return null;
 };
 
-const findAppOnWindows = async (appName) => {
+const findAppInRegistry = async (appName: string): Promise<string | null> => {
+  const registryKeys: string[] = [
+    '\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+    '\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
+  ];
+
+  for (const key of registryKeys) {
+    try {
+      const regKey = new WinReg({ hive: WinReg.HKLM, key });
+      const items: WinReg.Registry[] = await new Promise((resolve, reject) => {
+        regKey.keys((err, items) => {
+          if (err) {
+            reject(err);
+          } else {
+            items.map(async item => {
+              const pGet = promisify(item.get)
+              const appName = await pGet('DisplayName');
+              log("appName----", appName);
+            })
+          }
+        });
+      });
+
+      // for (const item of items) {
+      //   const displayName: string | null = await new Promise((resolve) => {
+      //     item.get('DisplayName', (err: Error | null, result: WinReg.RegistryItem | null) => {
+      //       if (err) {
+      //         resolve(null);
+      //       } else {
+      //         resolve(result ? result.value : null);
+      //       }
+      //     });
+      //   });
+
+      //   if (displayName && displayName.toLowerCase().includes(appName.toLowerCase())) {
+      //     const installLocation: string | null = await new Promise((resolve) => {
+      //       item.get('InstallLocation', (err: Error | null, result: WinReg.RegistryItem | null) => {
+      //         if (err) {
+      //           resolve(null);
+      //         } else {
+      //           resolve(result ? result.value : null);
+      //         }
+      //       });
+      //     });
+
+      //     if (installLocation) {
+      //       const exePath = path.join(installLocation, `${appName}.exe`);
+      //       try {
+      //         await fsp.access(exePath, fs.constants.F_OK);
+      //         return exePath;
+      //       } catch (e) {
+      //         // Executable not found in install location, continue searching
+      //       }
+      //     }
+      //   }
+      // }
+    } catch (err) {
+      // Registry key may not exist
+    }
+  }
+  return null;
+};
+
+const findAppOnWindows = async (appName: string): Promise<string | null> => {
+  // 1. Search in Windows Registry
+  const fromRegistry = await findAppInRegistry(appName);
+  if (fromRegistry) {
+    return fromRegistry;
+  }
   const exeName = `${appName}.exe`;
 
-  // 1. Use 'where' command to quickly check PATH
+  // 2. Use 'where' command to quickly check PATH
   try {
     const { stdout } = await execP(`where ${appName}`);
     const result = stdout.trim().split(/\r\n|\n/)[0];
@@ -101,7 +171,7 @@ const findAppOnWindows = async (appName) => {
     // Not found in PATH, continue searching
   }
 
-  // 2. Check common installation directories
+  // 3. Check common installation directories
   const searchPaths = [
     process.env.ProgramFiles, // C:\Program Files
     process.env['ProgramFiles(x86)'], // C:\Program Files (x86)
@@ -110,7 +180,7 @@ const findAppOnWindows = async (appName) => {
 
   for (const dir of searchPaths) {
     // Applications are usually installed in a subfolder named after the application
-    const appDir = path.join(dir, appName);
+    const appDir = path.join(dir as string, appName);
     const result = await findExeRecursive(appDir, exeName);
     if (result) {
       return result;

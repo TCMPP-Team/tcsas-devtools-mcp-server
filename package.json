@@ -35,11 +35,13 @@
     "@modelcontextprotocol/sdk": "^1.20.1",
     "express": "^5.1.0",
     "tencentcloud-sdk-nodejs-intl-en": "^3.0.1270",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "winreg": "^1.2.4"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.17.1",
     "@types/node": "^24.8.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@types/winreg": "^1.2.3"
   }
 }
