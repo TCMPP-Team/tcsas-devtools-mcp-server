@@ -1,6 +1,6 @@
 {
   "name": "tcsas-devtools-mcp-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An MCP (Model Context Protocol) server to integrate TCSAS-Devtools with AI assistants, enabling natural language control for miniprogram development tasks like launching, previewing, and uploading.",
   "main": "index.js",
   "type": "module",
