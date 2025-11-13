@@ -6,31 +6,59 @@ import { exec } from 'child_process';
 
 const execP = promisify(exec);
 
+const findExeRecursive = async (dir: string, exeName: string, maxDepth = 2): Promise<string | null> => {
+  if (maxDepth < 0) {
+    return null;
+  }
+  let entries: fs.Dirent[];
+  try {
+    entries = await fs.promises.readdir(dir, { withFileTypes: true });
+  } catch (err) {
+    return null;
+  }
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      const found = await findExeRecursive(fullPath, exeName, maxDepth - 1);
+      if (found) {
+        return found;
+      }
+    } else if (entry.name.toLowerCase() === exeName.toLowerCase()) {
+      return fullPath;
+    }
+  }
+  return null;
+};
+
 /**
- * 查找应用程序安装路径
- * @param {string} appName - 应用程序名称
- * @returns {Promise<string>} - 应用程序安装路径，未找到则返回空字符串
+ * Find the installation path of an application.
+ * @param {string} appName - The name of the application.
+ * @returns {Promise<string>} - The application's executable path, or an empty string if not found.
  */
 async function findWinAppPath(appName: string): Promise<string> {
   if (!appName) return '';
-
   const exeName = `${appName}.exe`;
 
-
   try {
-    // 1. 从常见目录查询
+    // 1. Search in common directories
     const programPath = await searchProgramDirs(appName);
-    if (programPath) return programPath;
+    if (programPath) {
+      const exePath = await findExeRecursive(programPath, exeName);
+      if (exePath) return exePath;
+    }
 
-    // 2. 从注册表查询
+    // 2. Search in the registry
     const registryPath = await searchRegistry(appName);
-    if (registryPath) return registryPath;
+    if (registryPath) {
+      const exePath = await findExeRecursive(registryPath, exeName);
+      if (exePath) return exePath;
+    }
 
-    // 3. Use 'where' command to quickly check PATH
+    // 3. Use 'where' command to quickly check PATH for the .exe
     try {
-      const { stdout } = await execP(`where ${appName}`);
+      const { stdout } = await execP(`where ${exeName}`);
       const result = stdout.trim().split(/\\r\\n|\\n/)[0];
-      if (result) {
+      if (result && fs.existsSync(result)) {
         return result;
       }
     } catch (err) {
@@ -43,7 +71,7 @@ async function findWinAppPath(appName: string): Promise<string> {
   }
 }
 
-// 从注册表查找
+// Search in the registry
 async function searchRegistry(appName: string): Promise<string | null> {
   const hives = [
     { hive: Registry.HKLM, key: '\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall' },
@@ -91,24 +119,48 @@ async function searchRegistry(appName: string): Promise<string | null> {
             return installLocation;
           }
         } catch (e) {
-          // 忽略错误
+          // Ignore errors
         }
       }
     } catch (e) {
-      // 忽略错误
+      // Ignore errors
     }
   }
 
   return null;
 }
 
-// 从程序目录查找
-// TODO 支持更多的常见目录
+// Search in program directories
 async function searchProgramDirs(appName: string): Promise<string | null> {
   const dirs = [
     process.env.ProgramFiles || 'C:\\Program Files',
     process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)',
+    'D:\\Program Files',
+    'D:\\Program Files (x86)',
+    'E:\\Program Files',
+    'E:\\Program Files (x86)',
+    'F:\\Program Files',
+    'F:\\Program Files (x86)',
   ];
+
+  // Add AppData directories, which are common for user-level installations
+  const localAppData = process.env.LOCALAPPDATA;
+  if (localAppData) {
+    dirs.push(localAppData);
+    // Many modern apps (like VS Code) install into a 'Programs' subdirectory here
+    dirs.push(path.join(localAppData, 'Programs'));
+  }
+
+  const appData = process.env.APPDATA;
+  if (appData) {
+    dirs.push(appData);
+  }
+
+  // Add ProgramData for shared application data
+  const programData = process.env.ProgramData;
+  if (programData) {
+    dirs.push(programData);
+  }
 
   for (const dir of dirs) {
     try {
@@ -117,7 +169,11 @@ async function searchProgramDirs(appName: string): Promise<string | null> {
       const subDirs = fs.readdirSync(dir)
         .filter(name => {
           const fullPath = path.join(dir, name);
-          return fs.statSync(fullPath).isDirectory();
+          try {
+            return fs.statSync(fullPath).isDirectory();
+          } catch {
+            return false; // Ignore files that can't be stat'd
+          }
         });
 
       for (const subDir of subDirs) {
@@ -126,27 +182,27 @@ async function searchProgramDirs(appName: string): Promise<string | null> {
         }
       }
     } catch (e) {
-      // 忽略错误
+      // Ignore errors
     }
   }
 
   return null;
 }
 
-// 简单匹配
+// Simple matching logic
 function isMatch(source: string, target: string): boolean {
   if (!source || !target) return false;
 
   const s = source.toLowerCase();
   const t = target.toLowerCase();
 
-  // 精确匹配
+  // Exact match
   if (s === t) return true;
 
-  // 包含匹配
+  // Contains match
   if (s.includes(t) || t.includes(s)) return true;
 
   return false;
 }
-// 导出
+// Export
 export { findWinAppPath };
