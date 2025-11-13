@@ -5,7 +5,7 @@ import fs from 'fs';
 import log from '../utils/log';
 import { promisify } from 'util';
 import { exec, execFile, spawn } from 'child_process';
-import WinReg from 'winreg';
+import { findWinAppPath } from './findWinApp';
 const execP = promisify(exec);
 const fsp = fs.promises;
 
@@ -19,6 +19,7 @@ const sleep = async function (time) {
     setTimeout(() => r(""), time);
   });
 }
+
 /**
  * 
  * @param query 
@@ -89,74 +90,12 @@ const findExeRecursive = async (dir, exeName, maxDepth = 2) => {
   return null;
 };
 
-const findAppInRegistry = async (appName: string): Promise<string | null> => {
-  const registryKeys: string[] = [
-    '\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
-    '\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
-  ];
-
-  for (const key of registryKeys) {
-    try {
-      const regKey = new WinReg({ hive: WinReg.HKLM, key });
-      const items: WinReg.Registry[] = await new Promise((resolve, reject) => {
-        regKey.keys((err, items) => {
-          if (err) {
-            reject(err);
-          } else {
-            items.map(async item => {
-              const pGet = promisify(item.get)
-              const appName = await pGet('DisplayName');
-              log("appName----", appName);
-            })
-          }
-        });
-      });
-
-      // for (const item of items) {
-      //   const displayName: string | null = await new Promise((resolve) => {
-      //     item.get('DisplayName', (err: Error | null, result: WinReg.RegistryItem | null) => {
-      //       if (err) {
-      //         resolve(null);
-      //       } else {
-      //         resolve(result ? result.value : null);
-      //       }
-      //     });
-      //   });
-
-      //   if (displayName && displayName.toLowerCase().includes(appName.toLowerCase())) {
-      //     const installLocation: string | null = await new Promise((resolve) => {
-      //       item.get('InstallLocation', (err: Error | null, result: WinReg.RegistryItem | null) => {
-      //         if (err) {
-      //           resolve(null);
-      //         } else {
-      //           resolve(result ? result.value : null);
-      //         }
-      //       });
-      //     });
-
-      //     if (installLocation) {
-      //       const exePath = path.join(installLocation, `${appName}.exe`);
-      //       try {
-      //         await fsp.access(exePath, fs.constants.F_OK);
-      //         return exePath;
-      //       } catch (e) {
-      //         // Executable not found in install location, continue searching
-      //       }
-      //     }
-      //   }
-      // }
-    } catch (err) {
-      // Registry key may not exist
-    }
-  }
-  return null;
-};
 
 const findAppOnWindows = async (appName: string): Promise<string | null> => {
-  // 1. Search in Windows Registry
-  const fromRegistry = await findAppInRegistry(appName);
-  if (fromRegistry) {
-    return fromRegistry;
+  // 1. Search in Windows System
+  const pathInSystem = await findWinAppPath(appName);
+  if (pathInSystem) {
+    return pathInSystem;
   }
   const exeName = `${appName}.exe`;
 
@@ -170,23 +109,6 @@ const findAppOnWindows = async (appName: string): Promise<string | null> => {
   } catch (err) {
     // Not found in PATH, continue searching
   }
-
-  // 3. Check common installation directories
-  const searchPaths = [
-    process.env.ProgramFiles, // C:\Program Files
-    process.env['ProgramFiles(x86)'], // C:\Program Files (x86)
-    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Programs') : null,
-  ].filter(Boolean); // Filter out invalid paths
-
-  for (const dir of searchPaths) {
-    // Applications are usually installed in a subfolder named after the application
-    const appDir = path.join(dir as string, appName);
-    const result = await findExeRecursive(appDir, exeName);
-    if (result) {
-      return result;
-    }
-  }
-
   return null;
 };
 
@@ -317,3 +239,6 @@ async function getCliPath(appName: string): Promise<string | null> {
 }
 
 export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath }
+
+
+findWinAppPath("TCMPP-Devtools").then(res => console.log(res))

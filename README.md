@@ -23,7 +23,7 @@ Before you begin, ensure you have the following software installed:
 
 ## 📦 Installation and Setup
 
-1.  **For first-time use, please download the installation package for TCSAS-Devtools from the console in advance.**
+1.  **For first-time use, please download the installation package for TCSAS-Devtools from the console in advance, the version should >= 2.2.15.**
 2.  **After installation, please open it to complete the login process and enable the service port.**
 
 ![login pannel ](https://github.com/TCMPP-Team/tcsas-devtools-mcp-server/raw/main/images/image.png)
