@@ -1,6 +1,10 @@
 import Registry from 'winreg';
 import path from 'path';
 import fs from 'fs';
+import { promisify } from 'util';
+import { exec } from 'child_process';
+
+const execP = promisify(exec);
 
 /**
  * 查找应用程序安装路径
@@ -10,6 +14,9 @@ import fs from 'fs';
 async function findWinAppPath(appName: string): Promise<string> {
   if (!appName) return '';
 
+  const exeName = `${appName}.exe`;
+
+
   try {
     // 1. 从常见目录查询
     const programPath = await searchProgramDirs(appName);
@@ -18,6 +25,17 @@ async function findWinAppPath(appName: string): Promise<string> {
     // 2. 从注册表查询
     const registryPath = await searchRegistry(appName);
     if (registryPath) return registryPath;
+
+    // 3. Use 'where' command to quickly check PATH
+    try {
+      const { stdout } = await execP(`where ${appName}`);
+      const result = stdout.trim().split(/\\r\\n|\\n/)[0];
+      if (result) {
+        return result;
+      }
+    } catch (err) {
+      // Not found in PATH, continue searching
+    }
 
     return '';
   } catch (error) {

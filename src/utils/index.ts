@@ -10,8 +10,8 @@ const fsp = fs.promises;
 
 /**
  * sleep
- * @param time 
- * @returns 
+ * @param time
+ * @returns
  */
 const sleep = async function (time: number) {
   return new Promise((r) => {
@@ -20,9 +20,9 @@ const sleep = async function (time: number) {
 }
 
 /**
- * 
- * @param query 
- * @returns 
+ *
+ * @param query
+ * @returns
  */
 const findAppOnMac = async (appName: string) => {
   const searchPaths = [
@@ -95,18 +95,6 @@ const findAppOnWindows = async (appName: string): Promise<string | null> => {
   const pathInSystem = await findWinAppPath(appName);
   if (pathInSystem) {
     return pathInSystem;
-  }
-  const exeName = `${appName}.exe`;
-
-  // 2. Use 'where' command to quickly check PATH
-  try {
-    const { stdout } = await execP(`where ${appName}`);
-    const result = stdout.trim().split(/\r\n|\n/)[0];
-    if (result) {
-      return result;
-    }
-  } catch (err) {
-    // Not found in PATH, continue searching
   }
   return null;
 };
