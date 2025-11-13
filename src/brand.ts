@@ -1,6 +1,6 @@
 import path from 'path';
-import { getAppSupportPath } from './utils/index.js';
-import log from './utils/log.js';
+import { getAppSupportPath } from './utils/index';
+import log from './utils/log';
 
 const appName = "TCSAS-Devtools";
 const mcpName = "tcsas-devtools-mcp-server";

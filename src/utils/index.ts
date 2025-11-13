@@ -2,7 +2,7 @@
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
-import log from '../utils/log.js';
+import log from '../utils/log';
 import { promisify } from 'util';
 import { exec, execFile, spawn } from 'child_process';
 import WinReg from 'winreg';

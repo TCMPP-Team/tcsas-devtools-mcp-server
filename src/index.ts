@@ -2,14 +2,14 @@
 
 import { z } from 'zod';
 import fs from 'fs';
-import log from './utils/log.js';
+import log from './utils/log';
 import { promisify } from 'util';
 import { execFile } from 'child_process';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { findAppOnMacOrWin, launchApp, getCliPath, sleep } from './utils/index.js';
-import { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
-import { appName, mcpName, getPreviewQrCodePath } from './brand.js';
+import { findAppOnMacOrWin, launchApp, getCliPath, sleep } from './utils/index';
+import { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
+import { appName, mcpName, getPreviewQrCodePath } from './brand';
 const execFileP = promisify(execFile);
 
 const server = new McpServer({
