@@ -4,6 +4,7 @@ import os from 'os';
 import fs from 'fs';
 import { promisify } from 'util';
 import { exec, execFile, spawn } from 'child_process';
+import { findWinAppPath } from './findWinApp';
 const execP = promisify(exec);
 const fsp = fs.promises;
 
@@ -17,6 +18,7 @@ const sleep = async function (time: number) {
     setTimeout(() => r(""), time);
   });
 }
+
 /**
  * 
  * @param query 
@@ -88,7 +90,26 @@ const findExeRecursive = async (dir: string, exeName: string, maxDepth = 2): Pro
 };
 
 
-const findAppOnWindows = () => { };
+const findAppOnWindows = async (appName: string): Promise<string | null> => {
+  // 1. Search in Windows System
+  const pathInSystem = await findWinAppPath(appName);
+  if (pathInSystem) {
+    return pathInSystem;
+  }
+  const exeName = `${appName}.exe`;
+
+  // 2. Use 'where' command to quickly check PATH
+  try {
+    const { stdout } = await execP(`where ${appName}`);
+    const result = stdout.trim().split(/\r\n|\n/)[0];
+    if (result) {
+      return result;
+    }
+  } catch (err) {
+    // Not found in PATH, continue searching
+  }
+  return null;
+};
 
 
 /**
@@ -217,3 +238,6 @@ async function getCliPath(appName: string): Promise<string | null> {
 }
 
 export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath }
+
+
+// findWinAppPath("TCMPP-Devtools").then(res => console.log(res))
