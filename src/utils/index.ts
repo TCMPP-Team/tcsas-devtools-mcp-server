@@ -191,14 +191,15 @@ async function launchApp(appName: string, ideInstallPath?: string) {
         return execFile('open', ['-a', identifierOrPath]);
       } else if (platform === 'win32') {
         // Windows: spawn the executable directly (detached)
-        const child = spawn(identifierOrPath, [], { detached: true, stdio: 'ignore' });
+        const child = spawn(`${identifierOrPath}`, [], { 
+          detached: true, 
+          stdio: 'ignore',
+          cwd: path.dirname(identifierOrPath)
+        });
         child.unref();
         return Promise.resolve();
-      } else {
-        // Linux/other: try to execute the executable or xdg-open
-        const child = spawn(identifierOrPath, [], { detached: true, stdio: 'ignore' });
-        child.unref();
-        return Promise.resolve();
+        // const cmd = `start "" "${identifierOrPath}"`;
+        // return execP(cmd, { shell: 'cmd.exe' });
       }
     }
   } catch (e) {
@@ -272,7 +273,7 @@ async function getCliPath(appName: string): Promise<string | null> {
   if (platform === 'win32') {
     const appDir = path.dirname(appPath);
     // Search for cli.exe in the application's directory
-    const cliPath = await findExeRecursive(appDir, 'cli.exe');
+    const cliPath = await findExeRecursive(appDir, `${appName}.exe`);
     return cliPath;
   }
 
@@ -283,4 +284,5 @@ async function getCliPath(appName: string): Promise<string | null> {
 export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath }
 
 
-// findWinAppPath("TCMPP-Devtools").then(res => console.log(res))
+// findWinAppPath("TCSAS-Devtools").then(res => console.log(res))
+// launchApp("TCSAS-Devtools").then(res => console.log(res))

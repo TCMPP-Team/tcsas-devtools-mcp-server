@@ -5,6 +5,7 @@ import fs from 'fs';
 import log from './utils/log';
 import { promisify } from 'util';
 import { execFile } from 'child_process';
+import { version } from '../package.json';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { findAppOnMacOrWin, launchApp, getCliPath, sleep } from './utils/index';
@@ -15,7 +16,7 @@ const execFileP = promisify(execFile);
 const server = new McpServer({
   title: mcpName,
   name: `${appName} for miniprogram development and debugging`,
-  version: '1.0.0',
+  version: version,
   websiteUrl: "https://www.tencentcloud.com/zh/products/tcsas",
   icons: [{
     src: "https://staticintl.cloudcachetci.com/yehe/backend-news/3HUL132_qc-topnav-m-logo.svg",
@@ -45,8 +46,8 @@ server.registerTool('launchIde', {
     msg: "",
   }
 
-  const result = await launchApp(appName, ideInstallPath);
-  if (result) {
+  const launchResult = await launchApp(appName, ideInstallPath);
+  if (launchResult) {
     output.openApp = true
   }
 
