@@ -240,7 +240,8 @@ async function getAppSupportPath(appName: string): Promise<string | null> {
   if (platform === 'darwin') {
     supportDir = path.join(homeDir, 'Library', 'Application Support');
   } else if (platform === 'win32') {
-    supportDir = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
+    // Use Local for temporary files and cache (not synced across machines)
+    supportDir = process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local');
   } else {
     console.warn(`Unsupported platform: ${platform} for getAppSupportPath`);
     return null;

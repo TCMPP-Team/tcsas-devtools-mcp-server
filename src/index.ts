@@ -141,7 +141,8 @@ server.registerTool('previewMiniprogram', {
         }]
       };
     }
-    await sleep(100);
+
+    await sleep(180); // TODO check IDE Logic
 
     if (!fs.existsSync(previewQrCodePath)) {
       return {
