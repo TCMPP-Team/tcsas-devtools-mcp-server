@@ -101,21 +101,69 @@ const findAppOnWindows = async (appName: string): Promise<string | null> => {
 
 
 /**
- * @param query
+ * @param appName
+ * @param ideInstallPath
  * @returns
  */
-const findAppOnMacOrWin = async function (query: string) {
-  if (global.pathFind) {
+const findAppOnMacOrWin = async function (appName: string, ideInstallPath?: string) {
+  // If ideInstallPath is provided, prioritize it and skip cache
+  // Otherwise, use cache if available
+  if (!ideInstallPath && global.pathFind) {
     return global.pathFind;
   }
 
   const platform = os.platform();
   let pathFind = "";
 
+  // If ideInstallPath is provided, search in current and parent directory first
+  if (ideInstallPath) {
+    try {
+      const stat = await fsp.stat(ideInstallPath);
+      if (stat.isDirectory()) {
+        // Search in current directory
+        const files = await fsp.readdir(ideInstallPath);
+        for (const file of files) {
+          const fullPath = path.join(ideInstallPath, file);
+          const fileName = platform === 'darwin'
+            ? file.replace(/\.app$/, '')  // Remove .app extension on macOS
+            : file.replace(/\.exe$/, ''); // Remove .exe extension on Windows
+
+          if (fileName.toLowerCase() === appName.toLowerCase() ||
+            fileName.toLowerCase().includes(appName.toLowerCase())) {
+            if (global.pathFind !== fullPath) {
+              global.pathFind = fullPath;
+            }
+            return fullPath;
+          }
+        }
+
+        // Search in parent directory
+        const parentDir = path.dirname(ideInstallPath);
+        const parentFiles = await fsp.readdir(parentDir);
+        for (const file of parentFiles) {
+          const fullPath = path.join(parentDir, file);
+          const fileName = platform === 'darwin'
+            ? file.replace(/\.app$/, '')
+            : file.replace(/\.exe$/, '');
+
+          if (fileName.toLowerCase() === appName.toLowerCase() ||
+            fileName.toLowerCase().includes(appName.toLowerCase())) {
+            if (global.pathFind !== fullPath) {
+              global.pathFind = fullPath;
+            }
+            return fullPath;
+          }
+        }
+      }
+    } catch (err) {
+      // Ignore errors and continue with default search logic
+    }
+  }
+
   if (platform === 'darwin') { // macOS
-    pathFind = await findAppOnMac(query);
+    pathFind = await findAppOnMac(appName);
   } else if (platform === 'win32') { // Windows
-    pathFind = await findAppOnWindows(query);
+    pathFind = await findAppOnWindows(appName);
   } else {
     console.warn(`Unsupported platform: ${platform} for findApp`);
   }
@@ -126,9 +174,9 @@ const findAppOnMacOrWin = async function (query: string) {
   return pathFind;
 }
 
-async function launchApp(appName: string) {
+async function launchApp(appName: string, ideInstallPath?: string) {
   // Try to find the full path of the app first.
-  const executablePath = await findAppOnMacOrWin(appName);
+  const executablePath = await findAppOnMacOrWin(appName, ideInstallPath);
   // If found, use the full path. Otherwise, use the original appName,
   // which might be a bundle ID on macOS or an app in the PATH.
   const identifierOrPath = executablePath || appName;

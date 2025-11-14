@@ -30,6 +30,7 @@ server.registerTool('launchIde', {
   title: 'Launch IDE',
   description: `Launches the ${appName} IDE. If a project path is provided, it opens the specified miniprogram project. Use this tool when the user wants to open the IDE or a specific project.`,
   inputSchema: {
+    ideInstallPath: z.string().optional().describe("The absolute path to the IDE installation. This is optional; if omitted, the IDE will be launched with the default installation path."),
     path: z.string().optional().describe("The absolute path to the miniprogram project to open. This is optional; if omitted, the IDE will just be launched."),
   },
   outputSchema: {
@@ -37,14 +38,14 @@ server.registerTool('launchIde', {
     openProject: z.boolean().describe("open project status"),
     msg: z.string().describe("launch IDE logs")
   }
-}, async ({ path }) => {
+}, async ({ path, ideInstallPath }) => {
   const output = {
     openApp: false,
     openProject: false,
     msg: "",
   }
 
-  const result = await launchApp(appName);
+  const result = await launchApp(appName, ideInstallPath);
   if (result) {
     output.openApp = true
   }
