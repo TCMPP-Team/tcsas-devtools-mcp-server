@@ -20,17 +20,18 @@ This is an MCP (Model Context Protocol) server that enables AI assistants to con
 ### Core Components
 
 - **Entry Point (`src/index.ts`):** Sets up the MCP server using `@modelcontextprotocol/sdk` and registers four main tools:
-  - `launchIde`: Opens TCSAS-Devtools, optionally with a specific project path. Uses CLI with `--agent` flag.
+  - `launchIde`: Opens TCSAS-Devtools, optionally with a specific project path and custom IDE installation path. Uses CLI with `--agent` flag.
   - `checkIdeInstalled`: Verifies IDE installation by searching system paths.
   - `previewMiniprogram`: Generates a preview QR code (60-80s process). Saves base64-encoded PNG to app support directory.
   - `uploadMiniprogram`: Uploads a new version with version number and description.
 
-- **Brand Configuration (`src/brand.ts`):** Centralizes app name (`TCSAS-Devtools`) and MCP server name. The `getPreviewQrCodePath()` function generates timestamped file paths in the app's support directory for QR code storage.
+- **Brand Configuration (`src/brand.ts`):** Centralizes app name (`TCSAS-Devtools`) and MCP server name constants.
 
 - **Cross-platform Utilities (`src/utils/index.ts`):**
-  - `findAppOnMacOrWin()`: Locates IDE installation. On macOS, searches `/Applications`, `~/Applications`, then uses Spotlight (mdfind). On Windows, delegates to registry/filesystem search. Results are cached in `global.pathFind`.
-  - `launchApp()`: Platform-specific launch logic (macOS: `open -a`, Windows: `spawn` or `start` command).
+  - `findAppOnMacOrWin(appName, ideInstallPath?)`: Locates IDE installation. If `ideInstallPath` is provided, searches current and parent directories first. Otherwise, on macOS searches `/Applications`, `~/Applications`, then uses Spotlight (mdfind); on Windows delegates to registry/filesystem search. Results are cached in `global.pathFind`.
+  - `launchApp(appName, ideInstallPath?)`: Platform-specific launch logic. Accepts optional custom IDE path (macOS: `open -a`, Windows: `spawn` or `start` command).
   - `getCliPath()`: Finds the CLI tool within the IDE installation (macOS: `Contents/MacOS/cli`, Windows: searches recursively for `cli.exe`).
+  - `getPreviewQrCodePath(appName)`: Generates timestamped file paths in the app's support directory for QR code storage (macOS: `~/Library/Application Support/{appName}/Default`, Windows: `%LOCALAPPDATA%\{appName}\User Data\Default`).
 
 - **Windows-specific (`src/utils/findWinApp.ts`):** Comprehensive Windows app finding logic:
   1. Searches common program directories (Program Files, AppData, ProgramData).

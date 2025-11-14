@@ -3,15 +3,12 @@
 import { z } from 'zod';
 import fs from 'fs';
 import log from './utils/log';
-import { promisify } from 'util';
-import { execFile } from 'child_process';
 import { version } from '../package.json';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { findAppOnMacOrWin, launchApp, getCliPath, sleep, getPreviewQrCodePath } from './utils/index';
+import { findAppOnMacOrWin, launchApp, getCliPath, sleep, getPreviewQrCodePath, executeCliCommand } from './utils/index';
 import { ImageContent } from '@modelcontextprotocol/sdk/types';
 import { appName, mcpName } from './brand';
-const execFileP = promisify(execFile);
 
 const server = new McpServer({
   title: mcpName,
@@ -32,7 +29,7 @@ server.registerTool('launchIde', {
   description: `Launches the ${appName} IDE. If a project path is provided, it opens the specified miniprogram project. Use this tool when the user wants to open the IDE or a specific project.`,
   inputSchema: {
     ideInstallPath: z.string().optional().describe("The absolute path to the IDE installation. This is optional; if omitted, the IDE will be launched with the default installation path."),
-    path: z.string().optional().describe("The absolute path to the miniprogram project to open. This is optional; if omitted, the IDE will just be launched."),
+    path: z.string().optional().optional().describe("The absolute path to the miniprogram project to open. This is optional; if omitted, the IDE will just be launched."),
   },
   outputSchema: {
     openApp: z.boolean().describe("open IDE status"),
@@ -54,11 +51,15 @@ server.registerTool('launchIde', {
   if (path) {
     const cliPath = await getCliPath(appName);
     if (cliPath) {
-      const { stdout, stderr } = await execFileP(cliPath, ['--open', path, '--agent']);
-      if (!stderr) {
-        output.openProject = true
+      try {
+        const { stdout, stderr } = await executeCliCommand(cliPath, ['--open', path, '--agent']);
+        if (!stderr) {
+          output.openProject = true
+        }
+        output.msg = stdout
+      } catch (err) {
+        output.msg = `Failed to open project: ${err.toString()}`
       }
-      output.msg = stdout
     }
   }
 
@@ -130,7 +131,7 @@ server.registerTool('previewMiniprogram', {
         }]
       };
     }
-    const { stdout, stderr } = await execFileP(cliPath, ['--preview', path, '--preview-qr-output', `base64@${encodeURIComponent(previewQrCodePath)}`]);
+    const { stdout, stderr } = await executeCliCommand(cliPath, ['--preview', path, '--preview-qr-output', `base64@${encodeURIComponent(previewQrCodePath)}`]);
     log("stdout:", stdout);
 
     if (stderr) {
@@ -198,7 +199,7 @@ server.registerTool('uploadMiniprogram', {
 
   if (cliPath) {
     try {
-      const { stdout, stderr } = await execFileP(cliPath, ['-u', `${version}@${path}`, '--upload-desc', describeMessage]);
+      const { stdout, stderr } = await executeCliCommand(cliPath, ['-u', `${version}@${path}`, '--upload-desc', describeMessage]);
       log("stdout:", stdout)
       log("stderr:", stderr)
       if (stdout) {
