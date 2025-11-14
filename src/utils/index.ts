@@ -105,18 +105,25 @@ const findAppOnWindows = async (appName: string): Promise<string | null> => {
  * @returns
  */
 const findAppOnMacOrWin = async function (query: string) {
+  if (global.pathFind) {
+    return global.pathFind;
+  }
+
   const platform = os.platform();
+  let pathFind = "";
 
   if (platform === 'darwin') { // macOS
-    return findAppOnMac(query);
+    pathFind = await findAppOnMac(query);
+  } else if (platform === 'win32') { // Windows
+    pathFind = await findAppOnWindows(query);
+  } else {
+    console.warn(`Unsupported platform: ${platform} for findApp`);
   }
 
-  if (platform === 'win32') { // Windows
-    return findAppOnWindows(query);
+  if (pathFind) {
+    global.pathFind = pathFind;
   }
-
-  console.warn(`Unsupported platform: ${platform} for findApp`);
-  return null;
+  return pathFind;
 }
 
 async function launchApp(appName: string) {

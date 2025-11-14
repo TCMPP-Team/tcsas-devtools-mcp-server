@@ -52,7 +52,7 @@ server.registerTool('launchIde', {
   if (path) {
     const cliPath = await getCliPath(appName);
     if (cliPath) {
-      const { stdout, stderr } = await execFileP(cliPath, ['--open', path]);
+      const { stdout, stderr } = await execFileP(cliPath, ['--open', path, '--agent']);
       if (!stderr) {
         output.openProject = true
       }
