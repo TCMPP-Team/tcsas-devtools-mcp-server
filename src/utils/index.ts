@@ -6,6 +6,7 @@ import { promisify } from 'util';
 import { exec, execFile, spawn } from 'child_process';
 import { findWinAppPath } from './findWinApp';
 const execP = promisify(exec);
+const execFileP = promisify(execFile);
 const fsp = fs.promises;
 
 /**
@@ -60,32 +61,6 @@ const findAppOnMac = async (appName: string) => {
     // Ignore if mdfind fails to execute
   }
 
-  return null;
-};
-
-const findExeRecursive = async (dir: string, exeName: string, maxDepth = 2): Promise<string | null> => {
-  if (maxDepth < 0) {
-    return null;
-  }
-
-  let entries: fs.Dirent[];
-  try {
-    entries = await fsp.readdir(dir, { withFileTypes: true });
-  } catch (err) {
-    return null; // Unable to read directory
-  }
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      const found = await findExeRecursive(fullPath, exeName, maxDepth - 1);
-      if (found) {
-        return found;
-      }
-    } else if (entry.name.toLowerCase() === exeName.toLowerCase()) {
-      return fullPath;
-    }
-  }
   return null;
 };
 
@@ -272,9 +247,26 @@ async function getCliPath(appName: string): Promise<string | null> {
 
   if (platform === 'win32') {
     const appDir = path.dirname(appPath);
-    // Search for cli.exe in the application's directory
-    const cliPath = await findExeRecursive(appDir, 'cli.exe');
-    return cliPath;
+    // Try to find clidev.bat first, then fallback to cliwin.bat
+    const possiblePaths = [
+      // path.join(appDir, 'package.nw', 'static', 'cli', 'clidev.bat'),
+      path.join(appDir, 'package.nw', 'static', 'cli', 'cliwin.bat'),
+    ];
+
+    for (const devCliPath of possiblePaths) {
+      try {
+        const stat = await fsp.stat(devCliPath);
+        if (stat.isFile()) {
+          return devCliPath;
+        }
+      } catch (err) {
+        // File does not exist, try next path
+        continue;
+      }
+    }
+
+    // No CLI file found
+    return null;
   }
 
   console.warn(`Unsupported platform: ${platform} for getCliPath`);
@@ -294,4 +286,24 @@ async function getPreviewQrCodePath(appName: string): Promise<string> {
   return "";
 }
 
-export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath, getPreviewQrCodePath }
+/**
+ * Execute CLI command with platform-specific handling
+ * @param cliPath Path to the CLI executable
+ * @param args Command arguments
+ * @returns Promise with stdout and stderr
+ */
+async function executeCliCommand(cliPath: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
+  const platform = os.platform();
+
+  // On Windows, .bat files need to be executed through cmd.exe
+  if (platform === 'win32' && cliPath.endsWith('.bat')) {
+    // Quote the path if it contains spaces
+    const quotedPath = cliPath.includes(' ') ? `"${cliPath}"` : cliPath;
+    return execFileP('cmd.exe', ['/c', quotedPath, ...args]);
+  }
+
+  // On macOS and other platforms, execute directly
+  return execFileP(cliPath, args);
+}
+
+export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath, getPreviewQrCodePath, executeCliCommand }
