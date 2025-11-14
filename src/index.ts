@@ -9,7 +9,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { findAppOnMacOrWin, launchApp, getCliPath, sleep } from './utils/index.js';
 import { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
-import { appName, mcpName, previewQrCodePath } from './brand.js';
+import { appName, mcpName, getPreviewQrCodePath } from './brand.js';
 const execFileP = promisify(execFile);
 
 const server = new McpServer({
@@ -101,42 +101,77 @@ server.registerTool('checkIdeInstalled', {
  */
 server.registerTool('previewMiniprogram', {
   title: 'Preview Miniprogram',
-  description: `Generates a preview of the miniprogram at the given project path. It returns a QR code as an image that can be scanned to view the preview.`,
+  description: `Generates a preview of the miniprogram at the given project path. It returns a QR code as an image that can be scanned to view the preview. Please note that this process can take 60-80 seconds to complete.`,
   inputSchema: {
     path: z.string().describe("The absolute path of the miniprogram project to preview."),
   },
 }, async ({ path }) => {
   const cliPath = await getCliPath(appName);
-  if (cliPath && path) {
-    const { stdout, stderr } = await execFileP(cliPath, ['--preview', path, '--preview-qr-output', `base64@${encodeURIComponent(previewQrCodePath)}`]);
-    log("stdout:", stdout)
-    log("stderr:", stderr)
-  }
-
-  await sleep(200);
-
-  if (!fs.existsSync(previewQrCodePath)) {
+  if (!cliPath) {
     return {
-      content: [{
-        type: 'text',
-        text: 'Failed to generate QR code file.'
-      }]
+      content: [{ type: 'text', text: `Could not find the command-line tool for ${appName}. Please ensure it is installed correctly.` }]
+    };
+  }
+  if (!path) {
+    return {
+      content: [{ type: 'text', text: 'Project path is required for preview.' }]
     };
   }
 
-  const base64Content = fs.readFileSync(previewQrCodePath, 'utf8');
-  const imageContent: ImageContent = {
-    type: "image",
-    data: base64Content.replace("data:image/png;base64,", ""),
-    mimeType: "image/png",
-    // (Optional) Add a description to help llm understand
-    annotations: {
-      title: "miniprogram preview Qrcode"
+  try {
+    const previewQrCodePath = await getPreviewQrCodePath();
+    if (!previewQrCodePath) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'Could not determine the path for the QR code. Your operating system may not be supported.'
+        }]
+      };
     }
-  };
+    const { stdout, stderr } = await execFileP(cliPath, ['--preview', path, '--preview-qr-output', `base64@${encodeURIComponent(previewQrCodePath)}`]);
+    log("stdout:", stdout);
 
-  return {
-    content: [imageContent]
+    if (stderr) {
+      log("stderr:", stderr);
+      return {
+        content: [{
+          type: 'text',
+          text: `Preview generation failed with the following message: ${stderr}. Please try opening the project in the ${appName} IDE to diagnose the issue.`
+        }]
+      };
+    }
+    await sleep(100);
+
+    if (!fs.existsSync(previewQrCodePath)) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'Preview command ran, but the QR code file was not generated. This could be due to a build error in the project. Please check the project in the IDE.'
+        }]
+      };
+    }
+
+    const base64Content = fs.readFileSync(previewQrCodePath, 'utf8');
+    const imageContent: ImageContent = {
+      type: "image",
+      data: base64Content.replace("data:image/png;base64,", ""),
+      mimeType: "image/png",
+      annotations: {
+        title: "miniprogram preview Qrcode"
+      }
+    };
+    return {
+      content: [imageContent]
+    };
+
+  } catch (error) {
+    log("Error executing preview command:", error);
+    return {
+      content: [{
+        type: 'text',
+        text: `Failed to generate preview QR code. This can happen if there is an issue with the miniprogram project itself. Please try opening the project in the ${appName} IDE to diagnose the issue. Error: ${error.message}`
+      }]
+    };
   }
 });
 

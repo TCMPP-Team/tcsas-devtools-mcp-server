@@ -1,10 +1,11 @@
 {
   "name": "tcsas-devtools-mcp-server",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "An MCP (Model Context Protocol) server to integrate TCSAS-Devtools with AI assistants, enabling natural language control for miniprogram development tasks like launching, previewing, and uploading.",
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "tsc": "tsc",
     "devins": "npm run tsc && npx -y @modelcontextprotocol/inspector node ./build/index.js",
     "dev": "npm run tsc && node ./build/index.js",
@@ -22,6 +23,14 @@
   "keywords": [],
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TCMPP-Team/tcsas-devtools-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TCMPP-Team/tcsas-devtools-mcp-server/issues"
+  },
+  "homepage": "https://github.com/TCMPP-Team/tcsas-devtools-mcp-server#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.1",
     "express": "^5.1.0",
