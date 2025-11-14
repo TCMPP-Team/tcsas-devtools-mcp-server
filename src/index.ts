@@ -8,9 +8,9 @@ import { execFile } from 'child_process';
 import { version } from '../package.json';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { findAppOnMacOrWin, launchApp, getCliPath, sleep } from './utils/index';
-import { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types';
-import { appName, mcpName, getPreviewQrCodePath } from './brand';
+import { findAppOnMacOrWin, launchApp, getCliPath, sleep, getPreviewQrCodePath } from './utils/index';
+import { ImageContent } from '@modelcontextprotocol/sdk/types';
+import { appName, mcpName } from './brand';
 const execFileP = promisify(execFile);
 
 const server = new McpServer({
@@ -121,7 +121,7 @@ server.registerTool('previewMiniprogram', {
   }
 
   try {
-    const previewQrCodePath = await getPreviewQrCodePath();
+    const previewQrCodePath = await getPreviewQrCodePath(appName);
     if (!previewQrCodePath) {
       return {
         content: [{
@@ -142,7 +142,8 @@ server.registerTool('previewMiniprogram', {
         }]
       };
     }
-    await sleep(100);
+
+    await sleep(180); // TODO check IDE Logic
 
     if (!fs.existsSync(previewQrCodePath)) {
       return {

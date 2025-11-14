@@ -241,7 +241,8 @@ async function getAppSupportPath(appName: string): Promise<string | null> {
   if (platform === 'darwin') {
     supportDir = path.join(homeDir, 'Library', 'Application Support');
   } else if (platform === 'win32') {
-    supportDir = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
+    // Use Local for temporary files and cache (not synced across machines)
+    supportDir = path.join(homeDir, 'AppData', 'Local');
   } else {
     console.warn(`Unsupported platform: ${platform} for getAppSupportPath`);
     return null;
@@ -281,8 +282,20 @@ async function getCliPath(appName: string): Promise<string | null> {
   return null;
 }
 
-export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath }
+async function getPreviewQrCodePath(appName: string): Promise<string> {
+  const appSupportPath = await getAppSupportPath(appName);
+  const platform = os.platform();
+  if (appSupportPath) {
+    if (platform === 'darwin') {
+      return path.join(appSupportPath, 'Default', `pBase64-${Date.now()}.txt`);
+    } else if (platform === 'win32') {
+      return path.join(appSupportPath, 'User Data', 'Default', `pBase64-${Date.now()}.txt`);
+    }
+  }
+  return "";
+}
 
 
 // findWinAppPath("TCSAS-Devtools").then(res => console.log(res))
 // launchApp("TCSAS-Devtools").then(res => console.log(res))
+export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath, getPreviewQrCodePath }
