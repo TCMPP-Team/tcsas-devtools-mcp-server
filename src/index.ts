@@ -56,7 +56,7 @@ server.registerTool('launchIde', {
         if (!stderr) {
           output.openProject = true
         }
-        output.msg = stdout
+        output.msg = stdout || stderr;
       } catch (err) {
         output.msg = `Failed to open project: ${err.toString()}`
       }
@@ -200,8 +200,8 @@ server.registerTool('uploadMiniprogram', {
   if (cliPath) {
     try {
       const { stdout, stderr } = await executeCliCommand(cliPath, ['-u', `${version}@${path}`, '--upload-desc', describeMessage]);
-      log("stdout:", stdout)
-      log("stderr:", stderr)
+      log("stdout:", stdout);
+      log("stderr:", stderr);
       if (stdout) {
         output.updateDetail = stdout.toString()
       }

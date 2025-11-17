@@ -2,6 +2,7 @@
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
+import log from './log';
 import { promisify } from 'util';
 import { exec, execFile, spawn } from 'child_process';
 import { findWinAppPath } from './findWinApp';
@@ -172,38 +173,11 @@ async function launchApp(appName: string, ideInstallPath?: string) {
           cwd: path.dirname(identifierOrPath)
         });
         child.unref();
-        return Promise.resolve();
-        // const cmd = `start "" "${identifierOrPath}"`;
-        // return execP(cmd, { shell: 'cmd.exe' });
+        return Promise.resolve(identifierOrPath);
       }
     }
   } catch (e) {
     // ignore and try other approaches
-  }
-
-  // if it's macOS, identifier could be bundle id or app name
-  if (platform === 'darwin') {
-    // if it's a bundle id like com.apple.Safari -> open -b
-    if (identifierOrPath.includes('.')) {
-      return execFile('open', ['-b', identifierOrPath]);
-    }
-    // otherwise open by app name: open -a "App Name"
-    return execFile('open', ['-a', identifierOrPath]);
-  }
-
-  // Windows: use the start command (must go through cmd)
-  if (platform === 'win32') {
-    // The first parameter of start is the title, usually an empty string
-    const cmd = `start "" "${identifierOrPath}"`;
-    return execP(cmd, { shell: 'cmd.exe' });
-  }
-
-  // Linux: try xdg-open or the command name directly
-  try {
-    return execFile('xdg-open', [identifierOrPath]);
-  } catch (e) {
-    // fallback: try running as command
-    return execP(identifierOrPath);
   }
 }
 
@@ -293,21 +267,62 @@ async function getPreviewQrCodePath(appName: string): Promise<string> {
  * @param args Command arguments
  * @returns Promise with stdout and stderr
  */
+// async function executeCliCommand(cliPath: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
+//   const platform = os.platform();
+
+//   // On Windows, .bat files need to be executed through cmd.exe
+//   if (platform === 'win32' && cliPath.endsWith('.bat')) {
+//     // Quote the path if it contains spaces
+//     const quotedPath = cliPath.includes(' ') ? `"${cliPath}"` : cliPath;
+//     // return execFileP('cmd.exe', ['/c', quotedPath, ...args]);
+//     log("cliPath:", cliPath);
+//     log("args:", args);
+//     log("quotedPath:", quotedPath);
+                       // "C:\\Program Files (x86)\\TCSAS\\DevTools\\package.nw\\static\\cli\\cliwin.bat"
+    // return execFileP("\"C:\\Program Files (x86)\\TCSAS\\DevTools\\package.nw\\static\\cli\\clidev.bat\"", args, {
+//     return execFileP(quotedPath, args, {
+//       shell: true,
+//       encoding: 'utf8'
+//     });
+//   }
+
+//   // On macOS and other platforms, execute directly
+//   return execFileP(cliPath, args);
+// }
 async function executeCliCommand(cliPath: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
   const platform = os.platform();
 
   // On Windows, .bat files need to be executed through cmd.exe
   if (platform === 'win32' && cliPath.endsWith('.bat')) {
-    // Quote the path if it contains spaces
-    const quotedPath = cliPath.includes(' ') ? `"${cliPath}"` : cliPath;
-    return execFileP('cmd.exe', ['/c', quotedPath, ...args]);
-  }
+    // For Windows batch files, we need to handle path escaping carefully
 
+    // Check if the path already contains escaped backslashes
+    // If we find '\\' in the path, it's likely already escaped
+    const hasEscapedBackslashes = cliPath.includes('\\\\');
+
+    // Only escape backslashes if they're not already escaped
+    // This prevents double-escaping issues
+    let processedPath: string;
+    if (hasEscapedBackslashes) {
+      // Path is already escaped, use as-is
+      processedPath = cliPath;
+    } else {
+      // Escape single backslashes to double backslashes
+      processedPath = cliPath.replace(/\\/g, '\\\\');
+    }
+    // Always wrap in quotes to handle spaces in path
+    const quotedPath = `"${processedPath}"`;
+    // log('quotedPath:', quotedPath);
+
+    try {
+      return execFileP(quotedPath, args, {
+        shell: true,
+        encoding: 'utf8'
+      });
+    } catch (error) {}
+  }
   // On macOS and other platforms, execute directly
   return execFileP(cliPath, args);
 }
 
 export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath, getPreviewQrCodePath, executeCliCommand }
-
-// findWinAppPath("TCSAS-Devtools").then(res => console.log(res))
-// launchApp("TCSAS-Devtools").then(res => console.log(res))
