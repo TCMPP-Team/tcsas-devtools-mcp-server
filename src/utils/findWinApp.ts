@@ -150,17 +150,20 @@ async function searchProgramDirs(appName: string): Promise<string | null> {
     // Many modern apps (like VS Code) install into a 'Programs' subdirectory here
     dirs.push(path.join(localAppData, 'Programs'));
   }
-
-  const appData = process.env.APPDATA;
-  if (appData) {
-    dirs.push(appData);
-  }
+ 
+  // ignore
+  // const appData = process.env.APPDATA;  
+  // if (appData) {
+  //   dirs.push(appData);
+  // }
 
   // Add ProgramData for shared application data
   const programData = process.env.ProgramData;
   if (programData) {
     dirs.push(programData);
   }
+
+  // log('dirs', dirs)
 
   for (const dir of dirs) {
     try {
