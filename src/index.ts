@@ -90,7 +90,7 @@ server.registerTool('checkIdeInstalled', {
   return {
     content: [
       {
-        type: 'text',
+        type: 'text' as const,
         text: JSON.stringify(output)
       }
     ],
@@ -160,9 +160,9 @@ server.registerTool('previewMiniprogram', {
       type: "image",
       data: base64Content.replace("data:image/png;base64,", ""),
       mimeType: "image/png",
-      annotations: {
-        title: "miniprogram preview Qrcode"
-      }
+      // annotations: {
+      //   title: "miniprogram preview Qrcode"
+      // }
     };
     return {
       content: [imageContent]
