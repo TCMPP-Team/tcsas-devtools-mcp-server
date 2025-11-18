@@ -2,20 +2,18 @@
 
 import { z } from 'zod';
 import fs from 'fs';
-import log from './utils/log.js';
-import { promisify } from 'util';
-import { execFile } from 'child_process';
+import log from './utils/log';
+import { version } from '../package.json';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { findAppOnMacOrWin, launchApp, getCliPath, sleep } from './utils/index.js';
-import { ImageContent, TextContent } from '@modelcontextprotocol/sdk/types.js';
-import { appName, mcpName, getPreviewQrCodePath } from './brand.js';
-const execFileP = promisify(execFile);
+import { findAppOnMacOrWin, launchApp, getCliPath, sleep, getPreviewQrCodePath, executeCliCommand } from './utils/index';
+import { ImageContent } from '@modelcontextprotocol/sdk/types';
+import { appName, mcpName } from './brand';
 
 const server = new McpServer({
   title: mcpName,
   name: `${appName} for miniprogram development and debugging`,
-  version: '1.0.0',
+  version: version,
   websiteUrl: "https://www.tencentcloud.com/zh/products/tcsas",
   icons: [{
     src: "https://staticintl.cloudcachetci.com/yehe/backend-news/3HUL132_qc-topnav-m-logo.svg",
@@ -30,33 +28,38 @@ server.registerTool('launchIde', {
   title: 'Launch IDE',
   description: `Launches the ${appName} IDE. If a project path is provided, it opens the specified miniprogram project. Use this tool when the user wants to open the IDE or a specific project.`,
   inputSchema: {
-    path: z.string().optional().describe("The absolute path to the miniprogram project to open. This is optional; if omitted, the IDE will just be launched."),
+    ideInstallPath: z.string().optional().describe("The absolute path to the IDE installation. This is optional; if omitted, the IDE will be launched with the default installation path."),
+    path: z.string().optional().optional().describe("The absolute path to the miniprogram project to open. This is optional; if omitted, the IDE will just be launched."),
   },
   outputSchema: {
     openApp: z.boolean().describe("open IDE status"),
     openProject: z.boolean().describe("open project status"),
     msg: z.string().describe("launch IDE logs")
   }
-}, async ({ path }) => {
+}, async ({ path, ideInstallPath }) => {
   const output = {
     openApp: false,
     openProject: false,
     msg: "",
   }
 
-  const result = await launchApp(appName);
-  if (result) {
+  const launchResult = await launchApp(appName, ideInstallPath);
+  if (launchResult) {
     output.openApp = true
   }
 
   if (path) {
     const cliPath = await getCliPath(appName);
     if (cliPath) {
-      const { stdout, stderr } = await execFileP(cliPath, ['--open', path]);
-      if (!stderr) {
-        output.openProject = true
+      try {
+        const { stdout, stderr } = await executeCliCommand(cliPath, ['--open', path, '--agent']);
+        if (!stderr) {
+          output.openProject = true
+        }
+        output.msg = stdout || stderr;
+      } catch (err) {
+        output.msg = `Failed to open project: ${err.toString()}`
       }
-      output.msg = stdout
     }
   }
 
@@ -87,7 +90,7 @@ server.registerTool('checkIdeInstalled', {
   return {
     content: [
       {
-        type: 'text',
+        type: 'text' as const,
         text: JSON.stringify(output)
       }
     ],
@@ -119,7 +122,7 @@ server.registerTool('previewMiniprogram', {
   }
 
   try {
-    const previewQrCodePath = await getPreviewQrCodePath();
+    const previewQrCodePath = await getPreviewQrCodePath(appName);
     if (!previewQrCodePath) {
       return {
         content: [{
@@ -128,7 +131,7 @@ server.registerTool('previewMiniprogram', {
         }]
       };
     }
-    const { stdout, stderr } = await execFileP(cliPath, ['--preview', path, '--preview-qr-output', `base64@${encodeURIComponent(previewQrCodePath)}`]);
+    const { stdout, stderr } = await executeCliCommand(cliPath, ['--preview', path, '--preview-qr-output', `base64@${encodeURIComponent(previewQrCodePath)}`]);
     log("stdout:", stdout);
 
     if (stderr) {
@@ -140,7 +143,8 @@ server.registerTool('previewMiniprogram', {
         }]
       };
     }
-    await sleep(100);
+
+    await sleep(180); // TODO check IDE Logic
 
     if (!fs.existsSync(previewQrCodePath)) {
       return {
@@ -156,9 +160,9 @@ server.registerTool('previewMiniprogram', {
       type: "image",
       data: base64Content.replace("data:image/png;base64,", ""),
       mimeType: "image/png",
-      annotations: {
-        title: "miniprogram preview Qrcode"
-      }
+      // annotations: {
+      //   title: "miniprogram preview Qrcode"
+      // }
     };
     return {
       content: [imageContent]
@@ -195,9 +199,9 @@ server.registerTool('uploadMiniprogram', {
 
   if (cliPath) {
     try {
-      const { stdout, stderr } = await execFileP(cliPath, ['-u', `${version}@${path}`, '--upload-desc', describeMessage]);
-      log("stdout:", stdout)
-      log("stderr:", stderr)
+      const { stdout, stderr } = await executeCliCommand(cliPath, ['-u', `${version}@${path}`, '--upload-desc', describeMessage]);
+      log("stdout:", stdout);
+      log("stderr:", stderr);
       if (stdout) {
         output.updateDetail = stdout.toString()
       }

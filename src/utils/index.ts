@@ -2,27 +2,31 @@
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
+import log from './log';
 import { promisify } from 'util';
 import { exec, execFile, spawn } from 'child_process';
+import { findWinAppPath } from './findWinApp';
 const execP = promisify(exec);
+const execFileP = promisify(execFile);
 const fsp = fs.promises;
 
 /**
  * sleep
- * @param time 
- * @returns 
+ * @param time
+ * @returns
  */
-const sleep = async function (time) {
+const sleep = async function (time: number) {
   return new Promise((r) => {
     setTimeout(() => r(""), time);
   });
 }
+
 /**
- * 
- * @param query 
- * @returns 
+ *
+ * @param query
+ * @returns
  */
-const findAppOnMac = async (appName) => {
+const findAppOnMac = async (appName: string) => {
   const searchPaths = [
     '/Applications',
     path.join(os.homedir(), 'Applications'),
@@ -61,88 +65,94 @@ const findAppOnMac = async (appName) => {
   return null;
 };
 
-const findExeRecursive = async (dir, exeName, maxDepth = 2) => {
-  if (maxDepth < 0) {
-    return null;
+
+const findAppOnWindows = async (appName: string): Promise<string | null> => {
+  // 1. Search in Windows System
+  const pathInSystem = await findWinAppPath(appName);
+  if (pathInSystem) {
+    return pathInSystem;
   }
-
-  let entries;
-  try {
-    entries = await fsp.readdir(dir, { withFileTypes: true });
-  } catch (err) {
-    return null; // Unable to read directory
-  }
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      const found = await findExeRecursive(fullPath, exeName, maxDepth - 1);
-      if (found) {
-        return found;
-      }
-    } else if (entry.name.toLowerCase() === exeName.toLowerCase()) {
-      return fullPath;
-    }
-  }
-  return null;
-};
-
-const findAppOnWindows = async (appName) => {
-  const exeName = `${appName}.exe`;
-
-  // 1. Use 'where' command to quickly check PATH
-  try {
-    const { stdout } = await execP(`where ${appName}`);
-    const result = stdout.trim().split(/\r\n|\n/)[0];
-    if (result) {
-      return result;
-    }
-  } catch (err) {
-    // Not found in PATH, continue searching
-  }
-
-  // 2. Check common installation directories
-  const searchPaths = [
-    process.env.ProgramFiles, // C:\Program Files
-    process.env['ProgramFiles(x86)'], // C:\Program Files (x86)
-    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Programs') : null,
-  ].filter(Boolean); // Filter out invalid paths
-
-  for (const dir of searchPaths) {
-    // Applications are usually installed in a subfolder named after the application
-    const appDir = path.join(dir, appName);
-    const result = await findExeRecursive(appDir, exeName);
-    if (result) {
-      return result;
-    }
-  }
-
   return null;
 };
 
 
 /**
- * @param query
+ * @param appName
+ * @param ideInstallPath
  * @returns
  */
-const findAppOnMacOrWin = async function (query: string) {
+const findAppOnMacOrWin = async function (appName: string, ideInstallPath?: string) {
+  // If ideInstallPath is provided, prioritize it and skip cache
+  // Otherwise, use cache if available
+  if (!ideInstallPath && global.pathFind) {
+    return global.pathFind;
+  }
+
   const platform = os.platform();
+  let pathFind = "";
+
+  // If ideInstallPath is provided, search in current and parent directory first
+  if (ideInstallPath) {
+    try {
+      const stat = await fsp.stat(ideInstallPath);
+      if (stat.isDirectory()) {
+        // Search in current directory
+        const files = await fsp.readdir(ideInstallPath);
+        for (const file of files) {
+          const fullPath = path.join(ideInstallPath, file);
+          const fileName = platform === 'darwin'
+            ? file.replace(/\.app$/, '')  // Remove .app extension on macOS
+            : file.replace(/\.exe$/, ''); // Remove .exe extension on Windows
+
+          if (fileName.toLowerCase() === appName.toLowerCase() ||
+            fileName.toLowerCase().includes(appName.toLowerCase())) {
+            if (global.pathFind !== fullPath) {
+              global.pathFind = fullPath;
+            }
+            return fullPath;
+          }
+        }
+
+        // Search in parent directory
+        const parentDir = path.dirname(ideInstallPath);
+        const parentFiles = await fsp.readdir(parentDir);
+        for (const file of parentFiles) {
+          const fullPath = path.join(parentDir, file);
+          const fileName = platform === 'darwin'
+            ? file.replace(/\.app$/, '')
+            : file.replace(/\.exe$/, '');
+
+          if (fileName.toLowerCase() === appName.toLowerCase() ||
+            fileName.toLowerCase().includes(appName.toLowerCase())) {
+            if (global.pathFind !== fullPath) {
+              global.pathFind = fullPath;
+            }
+            return fullPath;
+          }
+        }
+      }
+    } catch (err) {
+      // Ignore errors and continue with default search logic
+    }
+  }
 
   if (platform === 'darwin') { // macOS
-    return findAppOnMac(query);
+    pathFind = await findAppOnMac(appName);
+  } else if (platform === 'win32') { // Windows
+    pathFind = await findAppOnWindows(appName);
+  } else {
+    console.warn(`Unsupported platform: ${platform} for findApp`);
   }
 
-  if (platform === 'win32') { // Windows
-    return findAppOnWindows(query);
+  if (pathFind) {
+    global.pathFind = pathFind;
   }
-
-  console.warn(`Unsupported platform: ${platform} for findApp`);
-  return null;
+  return pathFind;
 }
 
-async function launchApp(appName: string) {
+async function launchApp(appName: string, ideInstallPath?: string) {
   // Try to find the full path of the app first.
-  const executablePath = await findAppOnMacOrWin(appName);
+  const executablePath = await findAppOnMacOrWin(appName, ideInstallPath);
   // If found, use the full path. Otherwise, use the original appName,
   // which might be a bundle ID on macOS or an app in the PATH.
   const identifierOrPath = executablePath || appName;
@@ -157,43 +167,17 @@ async function launchApp(appName: string) {
         return execFile('open', ['-a', identifierOrPath]);
       } else if (platform === 'win32') {
         // Windows: spawn the executable directly (detached)
-        const child = spawn(identifierOrPath, [], { detached: true, stdio: 'ignore' });
+        const child = spawn(`${identifierOrPath}`, [], { 
+          detached: true, 
+          stdio: 'ignore',
+          cwd: path.dirname(identifierOrPath)
+        });
         child.unref();
-        return Promise.resolve();
-      } else {
-        // Linux/other: try to execute the executable or xdg-open
-        const child = spawn(identifierOrPath, [], { detached: true, stdio: 'ignore' });
-        child.unref();
-        return Promise.resolve();
+        return Promise.resolve(identifierOrPath);
       }
     }
   } catch (e) {
     // ignore and try other approaches
-  }
-
-  // if it's macOS, identifier could be bundle id or app name
-  if (platform === 'darwin') {
-    // if it's a bundle id like com.apple.Safari -> open -b
-    if (identifierOrPath.includes('.')) {
-      return execFile('open', ['-b', identifierOrPath]);
-    }
-    // otherwise open by app name: open -a "App Name"
-    return execFile('open', ['-a', identifierOrPath]);
-  }
-
-  // Windows: use the start command (must go through cmd)
-  if (platform === 'win32') {
-    // The first parameter of start is the title, usually an empty string
-    const cmd = `start "" "${identifierOrPath}"`;
-    return execP(cmd, { shell: 'cmd.exe' });
-  }
-
-  // Linux: try xdg-open or the command name directly
-  try {
-    return execFile('xdg-open', [identifierOrPath]);
-  } catch (e) {
-    // fallback: try running as command
-    return execP(identifierOrPath);
   }
 }
 
@@ -206,7 +190,8 @@ async function getAppSupportPath(appName: string): Promise<string | null> {
   if (platform === 'darwin') {
     supportDir = path.join(homeDir, 'Library', 'Application Support');
   } else if (platform === 'win32') {
-    supportDir = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
+    // Use Local for temporary files and cache (not synced across machines)
+    supportDir = path.join(homeDir, 'AppData', 'Local');
   } else {
     console.warn(`Unsupported platform: ${platform} for getAppSupportPath`);
     return null;
@@ -237,13 +222,107 @@ async function getCliPath(appName: string): Promise<string | null> {
 
   if (platform === 'win32') {
     const appDir = path.dirname(appPath);
-    // Search for cli.exe in the application's directory
-    const cliPath = await findExeRecursive(appDir, 'cli.exe');
-    return cliPath;
+    // Try to find clidev.bat first, then fallback to cliwin.bat
+    const possiblePaths = [
+      // path.join(appDir, 'package.nw', 'static', 'cli', 'clidev.bat'),
+      path.join(appDir, 'package.nw', 'static', 'cli', 'cliwin.bat'),
+    ];
+
+    for (const devCliPath of possiblePaths) {
+      try {
+        const stat = await fsp.stat(devCliPath);
+        if (stat.isFile()) {
+          return devCliPath;
+        }
+      } catch (err) {
+        // File does not exist, try next path
+        continue;
+      }
+    }
+
+    // No CLI file found
+    return null;
   }
 
   console.warn(`Unsupported platform: ${platform} for getCliPath`);
   return null;
 }
 
-export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath }
+async function getPreviewQrCodePath(appName: string): Promise<string> {
+  const appSupportPath = await getAppSupportPath(appName);
+  const platform = os.platform();
+  if (appSupportPath) {
+    if (platform === 'darwin') {
+      return path.join(appSupportPath, 'Default', `pBase64-${Date.now()}.txt`);
+    } else if (platform === 'win32') {
+      return path.join(appSupportPath, 'User Data', 'Default', `pBase64-${Date.now()}.txt`);
+    }
+  }
+  return "";
+}
+
+/**
+ * Execute CLI command with platform-specific handling
+ * @param cliPath Path to the CLI executable
+ * @param args Command arguments
+ * @returns Promise with stdout and stderr
+ */
+// async function executeCliCommand(cliPath: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
+//   const platform = os.platform();
+
+//   // On Windows, .bat files need to be executed through cmd.exe
+//   if (platform === 'win32' && cliPath.endsWith('.bat')) {
+//     // Quote the path if it contains spaces
+//     const quotedPath = cliPath.includes(' ') ? `"${cliPath}"` : cliPath;
+//     // return execFileP('cmd.exe', ['/c', quotedPath, ...args]);
+//     log("cliPath:", cliPath);
+//     log("args:", args);
+//     log("quotedPath:", quotedPath);
+                       // "C:\\Program Files (x86)\\TCSAS\\DevTools\\package.nw\\static\\cli\\cliwin.bat"
+    // return execFileP("\"C:\\Program Files (x86)\\TCSAS\\DevTools\\package.nw\\static\\cli\\clidev.bat\"", args, {
+//     return execFileP(quotedPath, args, {
+//       shell: true,
+//       encoding: 'utf8'
+//     });
+//   }
+
+//   // On macOS and other platforms, execute directly
+//   return execFileP(cliPath, args);
+// }
+async function executeCliCommand(cliPath: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
+  const platform = os.platform();
+
+  // On Windows, .bat files need to be executed through cmd.exe
+  if (platform === 'win32' && cliPath.endsWith('.bat')) {
+    // For Windows batch files, we need to handle path escaping carefully
+
+    // Check if the path already contains escaped backslashes
+    // If we find '\\' in the path, it's likely already escaped
+    const hasEscapedBackslashes = cliPath.includes('\\\\');
+
+    // Only escape backslashes if they're not already escaped
+    // This prevents double-escaping issues
+    let processedPath: string;
+    if (hasEscapedBackslashes) {
+      // Path is already escaped, use as-is
+      processedPath = cliPath;
+    } else {
+      // Escape single backslashes to double backslashes
+      processedPath = cliPath.replace(/\\/g, '\\\\');
+    }
+    // Always wrap in quotes to handle spaces in path
+    const quotedPath = `"${processedPath}"`;
+    // log('quotedPath:', quotedPath);
+
+    try {
+      return execFileP(quotedPath, args, {
+        shell: true,
+        encoding: 'utf8'
+      });
+    } catch (error) {}
+  }
+  // On macOS and other platforms, execute directly
+  return execFileP(cliPath, args);
+}
+
+export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath, getPreviewQrCodePath, executeCliCommand }
