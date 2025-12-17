@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { launchApp, getCliPath, executeCliCommand } from '../utils/index';
+import { errorToString } from '../utils/error';
 import { appName } from '../brand';
 
 /**
@@ -25,9 +26,14 @@ export const launchIdeTool = {
       msg: "",
     }
 
-    const launchResult = await launchApp(appName, ideInstallPath);
-    if (launchResult) {
-      output.openApp = true
+    try {
+      const launchResult = await launchApp(appName, ideInstallPath);
+      if (launchResult) {
+        output.openApp = true;
+        output.msg = 'IDE launched successfully';
+      }
+    } catch (err) {
+      output.msg = `Failed to launch IDE: ${errorToString(err)}`;
     }
 
     if (path) {
@@ -36,11 +42,12 @@ export const launchIdeTool = {
         try {
           const { stdout, stderr } = await executeCliCommand(cliPath, ['--open', path, '--agent']);
           if (!stderr) {
-            output.openProject = true
+            output.openProject = true;
           }
-          output.msg = stdout || stderr;
+          // Prefer stderr for warnings, then stdout, then default message
+          output.msg = stderr || stdout || 'Project opened successfully';
         } catch (err) {
-          output.msg = `Failed to open project: ${(err as Error).toString()}`
+          output.msg = `Failed to open project: ${errorToString(err)}`;
         }
       }
     }

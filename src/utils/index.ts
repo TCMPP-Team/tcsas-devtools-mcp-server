@@ -150,35 +150,76 @@ const findAppOnMacOrWin = async function (appName: string, ideInstallPath?: stri
   return pathFind;
 }
 
-async function launchApp(appName: string, ideInstallPath?: string) {
-  // Try to find the full path of the app first.
+async function launchApp(appName: string, ideInstallPath?: string): Promise<string> {
   const executablePath = await findAppOnMacOrWin(appName, ideInstallPath);
-  // If found, use the full path. Otherwise, use the original appName,
-  // which might be a bundle ID on macOS or an app in the PATH.
   const identifierOrPath = executablePath || appName;
-
   const platform = process.platform;
-  // If the passed in path exists, open it as an executable
-  try {
-    const stat = await fsp.stat(identifierOrPath).catch(() => null);
-    if (stat) {
-      if (platform === 'darwin') {
-        // macOS: use open -a or open <.app path> directly
-        return execFile('open', ['-a', identifierOrPath]);
-      } else if (platform === 'win32') {
-        // Windows: spawn the executable directly (detached)
-        const child = spawn(`${identifierOrPath}`, [], { 
-          detached: true, 
-          stdio: 'ignore',
-          cwd: path.dirname(identifierOrPath)
-        });
-        child.unref();
-        return Promise.resolve(identifierOrPath);
+
+  log('Attempting to launch app:', { appName, identifierOrPath, platform });
+
+  // First try to launch the found executable
+  if (executablePath) {
+    try {
+      const stat = await fsp.stat(executablePath);
+      if (stat) {
+        if (platform === 'darwin') {
+          await execFileP('open', ['-a', executablePath]);
+          return executablePath;
+        } else if (platform === 'win32') {
+          const child = spawn(executablePath, [], {
+            detached: true,
+            stdio: 'ignore',
+            cwd: path.dirname(executablePath),
+            windowsHide: false
+          });
+          child.unref();
+          return executablePath;
+        }
       }
+    } catch (error) {
+      log('Failed to launch using executable path:', error);
+      // Continue to try fallback methods
     }
-  } catch (e) {
-    // ignore and try other approaches
   }
+
+  // Fallback: try to launch using app name
+  if (platform === 'darwin') {
+    try {
+      if (appName.includes('.')) {
+        // Might be a bundle ID
+        await execFileP('open', ['-b', appName]);
+        log('Successfully launched app using bundle ID:', appName);
+        return appName;
+      } else {
+        await execFileP('open', ['-a', appName]);
+        log('Successfully launched app using app name:', appName);
+        return appName;
+      }
+    } catch (error) {
+      log('Failed to launch app on macOS using fallback:', error);
+    }
+  } else if (platform === 'win32') {
+    try {
+      await execP(`start "" "${appName}"`, { shell: 'cmd.exe' });
+      log('Successfully launched app using Windows start command:', appName);
+      return appName;
+    } catch (error) {
+      log('Failed to launch app on Windows using fallback:', error);
+    }
+  } else if (platform === 'linux') {
+    try {
+      await execFileP('xdg-open', [appName]);
+      log('Successfully launched app on Linux:', appName);
+      return appName;
+    } catch (error) {
+      log('Failed to launch app on Linux:', error);
+    }
+  }
+
+  // All methods failed, throw explicit error
+  const errorMsg = `Failed to launch application "${appName}" on platform "${platform}". Please ensure the application is installed.`;
+  log(errorMsg);
+  throw new Error(errorMsg);
 }
 
 
@@ -267,28 +308,6 @@ async function getPreviewQrCodePath(appName: string): Promise<string> {
  * @param args Command arguments
  * @returns Promise with stdout and stderr
  */
-// async function executeCliCommand(cliPath: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
-//   const platform = os.platform();
-
-//   // On Windows, .bat files need to be executed through cmd.exe
-//   if (platform === 'win32' && cliPath.endsWith('.bat')) {
-//     // Quote the path if it contains spaces
-//     const quotedPath = cliPath.includes(' ') ? `"${cliPath}"` : cliPath;
-//     // return execFileP('cmd.exe', ['/c', quotedPath, ...args]);
-//     log("cliPath:", cliPath);
-//     log("args:", args);
-//     log("quotedPath:", quotedPath);
-                       // "C:\\Program Files (x86)\\TCSAS\\DevTools\\package.nw\\static\\cli\\cliwin.bat"
-    // return execFileP("\"C:\\Program Files (x86)\\TCSAS\\DevTools\\package.nw\\static\\cli\\clidev.bat\"", args, {
-//     return execFileP(quotedPath, args, {
-//       shell: true,
-//       encoding: 'utf8'
-//     });
-//   }
-
-//   // On macOS and other platforms, execute directly
-//   return execFileP(cliPath, args);
-// }
 async function executeCliCommand(cliPath: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
   const platform = os.platform();
 
@@ -319,7 +338,7 @@ async function executeCliCommand(cliPath: string, args: string[]): Promise<{ std
         shell: true,
         encoding: 'utf8'
       });
-    } catch (error) {}
+    } catch (error) { }
   }
   // On macOS and other platforms, execute directly
   return execFileP(cliPath, args);

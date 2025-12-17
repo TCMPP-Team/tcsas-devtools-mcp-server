@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import log from '../utils/log';
 import { getCliPath, executeCliCommand } from '../utils/index';
+import { errorToString } from '../utils/error';
 import { appName } from '../brand';
 
 /**
@@ -24,14 +25,30 @@ export const uploadMiniprogramTool = {
 
     if (cliPath) {
       try {
-        const { stdout, stderr } = await executeCliCommand(cliPath, ['-u', `${version}@${path}`, '--upload-desc', describeMessage]);
-        log("stdout:", stdout);
-        log("stderr:", stderr);
-        if (stdout) {
-          output.updateDetail = stdout.toString()
+        const { stdout, stderr } = await executeCliCommand(
+          cliPath,
+          ['-u', `${version}@${path}`, '--upload-desc', describeMessage]
+        );
+        log("Upload stdout:", stdout);
+        log("Upload stderr:", stderr);
+
+        // Smarter output handling
+        if (stderr && !stdout) {
+          // Only error output, likely failed
+          output.updateDetail = `Upload may have failed: ${stderr}`;
+        } else if (stdout) {
+          // Has normal output, consider success
+          output.updateDetail = stdout;
+          if (stderr) {
+            output.updateDetail += `\nWarnings: ${stderr}`;
+          }
+        } else {
+          output.updateDetail = 'Upload completed (no output)';
         }
       } catch (err) {
-        output.updateDetail = (err as Error).toString()
+        const errorMsg = errorToString(err);
+        output.updateDetail = `Upload failed: ${errorMsg}`;
+        log('Upload failed:', err);
       }
     }
 
