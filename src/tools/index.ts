@@ -5,5 +5,5 @@ export { launchIdeTool } from './launchIde';
 export { checkIdeInstalledTool } from './checkIdeInstalled';
 export { previewMiniprogramTool } from './previewMiniprogram';
 export { uploadMiniprogramTool } from './uploadMiniprogram';
-export { getSandboxResultTool } from './getSandboxResult';
+export { getMiniProgramRuntimeLogTool } from './getMiniProgramRuntimeLog';
 export type { McpToolDefinition } from './types';

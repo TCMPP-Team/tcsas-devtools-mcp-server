@@ -289,14 +289,21 @@ async function getCliPath(appName: string): Promise<string | null> {
   return null;
 }
 
-async function getPreviewQrCodePath(appName: string): Promise<string> {
+/**
+ * Get a temporary file path for storing generated files (QR codes, screenshots, etc.)
+ * @param appName The application name for determining the support directory
+ * @param prefix Optional prefix for the filename (default: 'temp')
+ * @param extension Optional file extension (default: 'txt')
+ * @returns A unique temporary file path
+ */
+async function getTemporaryFilePath(appName: string, prefix: string = 'temp', extension: string = 'txt'): Promise<string> {
   const appSupportPath = await getAppSupportPath(appName);
   const platform = os.platform();
   if (appSupportPath) {
     if (platform === 'darwin') {
-      return path.join(appSupportPath, 'Default', `pBase64-${Date.now()}.txt`);
+      return path.join(appSupportPath, 'Default', `${prefix}-${Date.now()}.${extension}`);
     } else if (platform === 'win32') {
-      return path.join(appSupportPath, 'User Data', 'Default', `pBase64-${Date.now()}.txt`);
+      return path.join(appSupportPath, 'User Data', 'Default', `${prefix}-${Date.now()}.${extension}`);
     }
   }
   return "";
@@ -334,14 +341,21 @@ async function executeCliCommand(cliPath: string, args: string[]): Promise<{ std
     // log('quotedPath:', quotedPath);
 
     try {
-      return execFileP(quotedPath, args, {
+      return await execFileP(quotedPath, args, {
         shell: true,
         encoding: 'utf8'
       });
-    } catch (error) { }
+    } catch (error) {
+      log('Failed to execute Windows batch file:', error);
+      throw new Error(
+        `Failed to execute CLI command "${cliPath}" with args [${args.join(', ')}]: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
   // On macOS and other platforms, execute directly
-  return execFileP(cliPath, args);
+  return execFileP(cliPath, args, { encoding: 'utf8' });
 }
 
-export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath, getPreviewQrCodePath, executeCliCommand }
+export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath, getTemporaryFilePath, executeCliCommand }

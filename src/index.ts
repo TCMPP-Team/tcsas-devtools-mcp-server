@@ -11,7 +11,7 @@ import {
   checkIdeInstalledTool,
   previewMiniprogramTool,
   uploadMiniprogramTool,
-  getSandboxResultTool,
+  getMiniProgramRuntimeLogTool,
   McpToolDefinition
 } from './tools';
 
@@ -47,7 +47,7 @@ registerTool(launchIdeTool);
 registerTool(checkIdeInstalledTool);
 registerTool(previewMiniprogramTool);
 registerTool(uploadMiniprogramTool);
-registerTool(getSandboxResultTool);
+registerTool(getMiniProgramRuntimeLogTool);
 
 const transport = new StdioServerTransport();
 server.connect(transport);

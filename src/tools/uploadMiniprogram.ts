@@ -23,7 +23,9 @@ export const uploadMiniprogramTool = {
     const output = { updateDetail: "upload fail" };
     const cliPath = await getCliPath(appName);
 
-    if (cliPath) {
+    if (!cliPath) {
+      output.updateDetail = `Could not find the command-line tool for ${appName}. Please ensure it is installed correctly.`;
+    } else {
       try {
         const { stdout, stderr } = await executeCliCommand(
           cliPath,

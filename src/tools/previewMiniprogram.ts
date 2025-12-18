@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import fs from 'fs';
 import log from '../utils/log';
-import { getCliPath, sleep, getPreviewQrCodePath, executeCliCommand } from '../utils/index';
+import { getCliPath, sleep, getTemporaryFilePath, executeCliCommand } from '../utils/index';
 import { ImageContent } from '@modelcontextprotocol/sdk/types';
 import { appName } from '../brand';
 
@@ -28,8 +28,9 @@ export const previewMiniprogramTool = {
       };
     }
 
+    let previewQrCodePath: string | null = null;
     try {
-      const previewQrCodePath = await getPreviewQrCodePath(appName);
+      previewQrCodePath = await getTemporaryFilePath(appName, 'preview-qrcode', 'txt');
       if (!previewQrCodePath) {
         return {
           content: [{
@@ -80,6 +81,16 @@ export const previewMiniprogramTool = {
           text: `Failed to generate preview QR code. This can happen if there is an issue with the miniprogram project itself. Please try opening the project in the ${appName} IDE to diagnose the issue. Error: ${(error as Error).message}`
         }]
       };
+    } finally {
+      // Clean up temporary QR code file
+      if (previewQrCodePath && fs.existsSync(previewQrCodePath)) {
+        try {
+          fs.unlinkSync(previewQrCodePath);
+          // log("Cleaned up preview QR code file:", previewQrCodePath);
+        } catch (cleanupError) {
+          // log("Failed to clean up preview QR code file:", cleanupError);
+        }
+      }
     }
   }
 };

@@ -38,7 +38,9 @@ export const launchIdeTool = {
 
     if (path) {
       const cliPath = await getCliPath(appName);
-      if (cliPath) {
+      if (!cliPath) {
+        output.msg = `Could not find the command-line tool for ${appName}. Please ensure it is installed correctly.`;
+      } else {
         try {
           const { stdout, stderr } = await executeCliCommand(cliPath, ['--open', path, '--agent']);
           if (!stderr) {
