@@ -12,6 +12,7 @@ This server wraps the basic functionalities of `TCSAS-Devtools` into a set of to
 -   **Check Installation**: Verify if `TCSAS-Devtools` is installed on the local machine.
 -   **Preview Miniprogram**: Generate a QR code for previewing the miniprogram on a mobile device.
 -   **Upload Miniprogram**: Upload a new version of the miniprogram with specified version information.
+-   **Get Runtime Log**: Retrieve the latest runtime log and screenshot from the MiniProgram IDE for debugging.
 
 ## 🚀 Prerequisites
 
@@ -68,27 +69,48 @@ You can integrate this server with any AI assistant that supports custom MCP ser
 
 Below is a detailed description of all the tools provided by this MCP server:
 
-#### `launchIde`
+### `launchIde`
 Launches the `TCSAS-Devtools` IDE.
 -   **Input Parameters:**
     -   `path` (optional, string): The absolute path to the miniprogram project to open.
+    -   `ideInstallPath` (optional, string): The absolute path to the IDE installation. If omitted, the IDE will be launched with the default installation path.
+-   **Output:**
+    -   `openApp` (boolean): Whether the IDE was launched successfully.
+    -   `openProject` (boolean): Whether the project was opened successfully.
+    -   `msg` (string): Status message or error details.
 
-
-#### `checkIdeInstalled`
+### `checkIdeInstalled`
 Checks if the `TCSAS-Devtools` IDE is installed.
 -   **Input Parameters:** None
+-   **Output:**
+    -   `isInstall` (boolean): Returns `true` if the IDE is installed, otherwise `false`.
 
-#### `previewMiniprogram`
-Generates a preview QR code for a miniprogram project.
+### `previewMiniprogram`
+Generates a preview QR code for a miniprogram project. Note: This process can take 60-80 seconds to complete.
 -   **Input Parameters:**
     -   `path` (string): The absolute path to the miniprogram project.
+-   **Output:**
+    -   Returns a QR code image (PNG) that can be scanned to preview the miniprogram.
 
-#### `uploadMiniprogram`
+### `uploadMiniprogram`
 Uploads a new version of the miniprogram.
 -   **Input Parameters:**
     -   `path` (string): The absolute path to the project.
     -   `version` (string): The new version number (e.g., "1.0.1").
     -   `describeMessage` (string): A short description of the changes.
+-   **Output:**
+    -   `updateDetail` (string): Upload response details or error message.
+
+### `getMiniProgramRuntimeLog`
+Get the latest runtime log and screenshot from MiniProgram IDE. Use this after writing or modifying code to verify execution results and UI rendering.
+-   **Input Parameters:**
+    -   `path` (string): The absolute path of the miniprogram project.
+-   **Output:**
+    -   `result` (string): The runtime log from MiniProgram (console.log, warnings, errors).
+    -   `timestamp` (string): When the log was generated.
+    -   `screenshot` (image/png): A screenshot of the current MiniProgram view.
+
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
