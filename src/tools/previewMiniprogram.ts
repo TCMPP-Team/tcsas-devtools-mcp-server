@@ -11,7 +11,7 @@ import { appName } from '../brand';
 export const previewMiniprogramTool = {
   name: 'previewMiniprogram',
   title: 'Preview Miniprogram',
-  description: `Generates a preview of the miniprogram at the given project path. It returns a QR code as an image that can be scanned to view the preview. Please note that this process can take 60-80 seconds to complete.`,
+  description: `Generates a QR code for previewing the miniprogram on a physical device (mobile phone). The user needs to scan the QR code with their mobile device to test the miniprogram. This is NOT for viewing execution results or debugging output - use getMiniProgramRuntimeLog instead if you want to check console logs or screenshots. Note: QR code generation takes 60-80 seconds.`,
   inputSchema: {
     path: z.string().describe("The absolute path of the miniprogram project to preview."),
   },
