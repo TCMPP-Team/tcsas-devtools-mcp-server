@@ -12,6 +12,8 @@ import {
   previewMiniProgramOnDeviceTool,
   uploadMiniprogramTool,
   getMiniProgramRuntimeLogTool,
+  setCompileConditionTool,
+  deleteCompileConditionTool,
   McpToolDefinition
 } from './tools';
 
@@ -48,6 +50,8 @@ registerTool(checkIdeInstalledTool);
 registerTool(previewMiniProgramOnDeviceTool);
 registerTool(uploadMiniprogramTool);
 registerTool(getMiniProgramRuntimeLogTool);
+registerTool(setCompileConditionTool);
+registerTool(deleteCompileConditionTool);
 
 const transport = new StdioServerTransport();
 server.connect(transport);

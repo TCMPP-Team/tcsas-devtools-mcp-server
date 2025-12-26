@@ -13,6 +13,8 @@ This server wraps the basic functionalities of `TCSAS-Devtools` into a set of to
 -   **Preview On Device**: Generate a QR code for previewing the miniprogram on a real mobile device.
 -   **Upload Miniprogram**: Upload a new version of the miniprogram with specified version information.
 -   **Get Runtime Log**: Retrieve the latest runtime log and screenshot from the MiniProgram IDE for debugging.
+-   **Set Compile Condition**: Set the startup page and parameters for debugging specific pages.
+-   **Delete Compile Condition**: Remove a compile condition by name.
 
 ## 🚀 Prerequisites
 
@@ -112,6 +114,27 @@ Get the latest runtime log and screenshot from MiniProgram IDE. Use this after w
     -   `result` (string): The runtime log from MiniProgram (console.log, warnings, errors).
     -   `timestamp` (string): When the log was generated.
     -   `screenshot` (optional, image/png): A screenshot of the current MiniProgram view (only if needScreen is true).
+
+### `setCompileCondition`
+Sets the compile condition for a miniprogram project. Use this to switch the startup page and pass page parameters for debugging specific pages.
+-   **Input Parameters:**
+    -   `path` (string): The absolute path of the miniprogram project.
+    -   `conditionName` (string): Name of the compile condition (e.g., 'test', 'debug-home').
+    -   `pagePath` (string): The startup page path (e.g., 'pages/index/index').
+    -   `query` (optional, string): Page parameters in query string format (e.g., 'id=123&type=test').
+    -   `simulateUpdate` (optional, boolean): Whether to simulate an update scenario. Default is false.
+-   **Output:**
+    -   `success` (boolean): Whether the compile condition was set successfully.
+    -   `message` (string): Result message.
+
+### `deleteCompileCondition`
+Deletes a compile condition from a miniprogram project by its name.
+-   **Input Parameters:**
+    -   `path` (string): The absolute path of the miniprogram project.
+    -   `conditionName` (string): Name of the compile condition to delete.
+-   **Output:**
+    -   `success` (boolean): Whether the compile condition was deleted successfully.
+    -   `message` (string): Result message.
 
 ## 🤝 Contributing
 
