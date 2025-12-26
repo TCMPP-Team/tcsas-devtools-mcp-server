@@ -348,8 +348,7 @@ async function executeCliCommand(cliPath: string, args: string[]): Promise<{ std
     } catch (error) {
       log('Failed to execute Windows batch file:', error);
       throw new Error(
-        `Failed to execute CLI command "${cliPath}" with args [${args.join(', ')}]: ${
-          error instanceof Error ? error.message : String(error)
+        `Failed to execute CLI command "${cliPath}" with args [${args.join(', ')}]: ${error instanceof Error ? error.message : String(error)
         }`
       );
     }

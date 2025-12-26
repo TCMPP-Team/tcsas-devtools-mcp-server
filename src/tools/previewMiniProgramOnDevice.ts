@@ -3,15 +3,15 @@ import fs from 'fs';
 import log from '../utils/log';
 import { getCliPath, sleep, getTemporaryFilePath, executeCliCommand } from '../utils/index';
 import { ImageContent } from '@modelcontextprotocol/sdk/types';
-import { appName } from '../brand';
+import { appName, deviceAppName } from '../brand';
 
 /**
- * Preview miniprogram with devtools
+ * Generate QR code for real device preview
  */
-export const previewMiniprogramTool = {
-  name: 'previewMiniprogram',
-  title: 'Preview Miniprogram',
-  description: `Generates a QR code for previewing the miniprogram on a physical device (mobile phone). The user needs to scan the QR code with their mobile device to test the miniprogram. This is NOT for viewing execution results or debugging output - use getMiniProgramRuntimeLog instead if you want to check console logs or screenshots. Note: QR code generation takes 60-80 seconds.`,
+export const previewMiniProgramOnDeviceTool = {
+  name: 'previewMiniProgramOnDevice',
+  title: 'Preview MiniProgram On Device',
+  description: `Generates a QR code for REAL DEVICE preview. The user must manually scan this QR code with the ${deviceAppName} app on their phone to preview the miniprogram. This is ONLY for device preview - DO NOT use this to check execution results or get screenshots (use getMiniProgramRuntimeLog for that). Takes 60-80 seconds.`,
   inputSchema: {
     path: z.string().describe("The absolute path of the miniprogram project to preview."),
   },
@@ -40,7 +40,7 @@ export const previewMiniprogramTool = {
         };
       }
       const { stdout, stderr } = await executeCliCommand(cliPath, ['--preview', path, '--preview-qr-output', `base64@${encodeURIComponent(previewQrCodePath)}`]);
-      log("stdout:", stdout);
+      log("previewMiniProgramOnDeviceTool stdout:", stdout);
 
       if (stderr) {
         log("stderr:", stderr);

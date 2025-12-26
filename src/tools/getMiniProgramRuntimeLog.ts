@@ -17,12 +17,13 @@ export const getMiniProgramRuntimeLogTool = {
     path: z.string().describe("The absolute path of the miniprogram project."),
     needScreen: z.boolean().optional().describe("Whether to capture a screenshot. Default is false."),
     screenshotFormat: z.enum(['png', 'base64']).optional().describe("Screenshot format: 'png' (binary file) or 'base64' (text file). Default is 'png'."),
+    logLevel: z.array(z.enum(['log', 'info', 'warn', 'error', 'debug'])).optional().describe("Filter logs by level. Can be one or more of: 'log', 'info', 'warn', 'error', 'debug'. If not specified, all logs are returned."),
   },
   outputSchema: {
     result: z.string().describe("The runtime log from MiniProgram"),
     timestamp: z.string().optional().describe("When the log was generated"),
   },
-  handler: async ({ path, needScreen = false, screenshotFormat = 'png' }: { path: string; needScreen?: boolean; screenshotFormat?: 'png' | 'base64' }) => {
+  handler: async ({ path, needScreen = false, screenshotFormat = 'png', logLevel }: { path: string; needScreen?: boolean; screenshotFormat?: 'png' | 'base64'; logLevel?: Array<'log' | 'info' | 'warn' | 'error' | 'debug'> }) => {
     const cliPath = await getCliPath(appName);
     if (!cliPath) {
       return {
@@ -39,6 +40,11 @@ export const getMiniProgramRuntimeLogTool = {
     try {
       // Build CLI command arguments
       const args = ['--run-log', path];
+
+      // Add log level filter if specified
+      if (logLevel && logLevel.length > 0) {
+        args.push('--log-level', logLevel.join(','));
+      }
 
       // Only add screenshot-output if needScreen is true
       if (needScreen) {

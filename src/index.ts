@@ -9,7 +9,7 @@ import { appName, mcpName } from './brand';
 import {
   launchIdeTool,
   checkIdeInstalledTool,
-  previewMiniprogramTool,
+  previewMiniProgramOnDeviceTool,
   uploadMiniprogramTool,
   getMiniProgramRuntimeLogTool,
   McpToolDefinition
@@ -45,7 +45,7 @@ function registerTool(tool: McpToolDefinition) {
 // Register all tools
 registerTool(launchIdeTool);
 registerTool(checkIdeInstalledTool);
-registerTool(previewMiniprogramTool);
+registerTool(previewMiniProgramOnDeviceTool);
 registerTool(uploadMiniprogramTool);
 registerTool(getMiniProgramRuntimeLogTool);
 

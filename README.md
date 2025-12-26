@@ -10,7 +10,7 @@ This server wraps the basic functionalities of `TCSAS-Devtools` into a set of to
 
 -   **Launch IDE**: Directly open the `TCSAS-Devtools` application or a specific miniprogram project.
 -   **Check Installation**: Verify if `TCSAS-Devtools` is installed on the local machine.
--   **Preview Miniprogram**: Generate a QR code for previewing the miniprogram on a mobile device.
+-   **Preview On Device**: Generate a QR code for previewing the miniprogram on a real mobile device.
 -   **Upload Miniprogram**: Upload a new version of the miniprogram with specified version information.
 -   **Get Runtime Log**: Retrieve the latest runtime log and screenshot from the MiniProgram IDE for debugging.
 
@@ -85,12 +85,12 @@ Checks if the `TCSAS-Devtools` IDE is installed.
 -   **Output:**
     -   `isInstall` (boolean): Returns `true` if the IDE is installed, otherwise `false`.
 
-### `previewMiniprogram`
-Generates a preview QR code for a miniprogram project. Note: This process can take 60-80 seconds to complete.
+### `previewMiniProgramOnDevice`
+Generates a QR code for REAL DEVICE preview. The user must manually scan this QR code with the TCSAS-App on their phone to preview the miniprogram. This is ONLY for device preview - NOT for checking execution results or screenshots (use `getMiniProgramRuntimeLog` for that). Note: This process takes 60-80 seconds.
 -   **Input Parameters:**
     -   `path` (string): The absolute path to the miniprogram project.
 -   **Output:**
-    -   Returns a QR code image (PNG) that can be scanned to preview the miniprogram.
+    -   Returns a QR code image (PNG) that can be scanned with TCSAS-App to preview the miniprogram on a real device.
 
 ### `uploadMiniprogram`
 Uploads a new version of the miniprogram.
@@ -105,10 +105,13 @@ Uploads a new version of the miniprogram.
 Get the latest runtime log and screenshot from MiniProgram IDE. Use this after writing or modifying code to verify execution results and UI rendering.
 -   **Input Parameters:**
     -   `path` (string): The absolute path of the miniprogram project.
+    -   `needScreen` (optional, boolean): Whether to capture a screenshot. Default is false.
+    -   `screenshotFormat` (optional, string): Screenshot format: 'png' (binary file) or 'base64' (text file). Default is 'png'.
+    -   `logLevel` (optional, array): Filter logs by level. Can be one or more of: 'log', 'info', 'warn', 'error', 'debug'. If not specified, all logs are returned.
 -   **Output:**
     -   `result` (string): The runtime log from MiniProgram (console.log, warnings, errors).
     -   `timestamp` (string): When the log was generated.
-    -   `screenshot` (image/png): A screenshot of the current MiniProgram view.
+    -   `screenshot` (optional, image/png): A screenshot of the current MiniProgram view (only if needScreen is true).
 
 ## 🤝 Contributing
 

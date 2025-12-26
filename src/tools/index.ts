@@ -3,7 +3,7 @@
  */
 export { launchIdeTool } from './launchIde';
 export { checkIdeInstalledTool } from './checkIdeInstalled';
-export { previewMiniprogramTool } from './previewMiniprogram';
-export { uploadMiniprogramTool } from './uploadMiniprogram';
 export { getMiniProgramRuntimeLogTool } from './getMiniProgramRuntimeLog';
+export { uploadMiniprogramTool } from './uploadMiniprogram';
+export { previewMiniProgramOnDeviceTool } from './previewMiniProgramOnDevice';
 export type { McpToolDefinition } from './types';
