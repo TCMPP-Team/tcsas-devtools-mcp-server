@@ -290,23 +290,99 @@ async function getCliPath(appName: string): Promise<string | null> {
 }
 
 /**
- * Get a temporary file path for storing generated files (QR codes, screenshots, etc.)
+ * Get the base temp directory path for the app
  * @param appName The application name for determining the support directory
+ * @returns The temp base directory path, or null if unsupported platform
+ */
+async function getTempBaseDir(appName: string): Promise<string | null> {
+  const appSupportPath = await getAppSupportPath(appName);
+  const platform = os.platform();
+
+  if (!appSupportPath) {
+    return null;
+  }
+
+  if (platform === 'darwin') {
+    return path.join(appSupportPath, 'Default', 'temp');
+  } else if (platform === 'win32') {
+    return path.join(appSupportPath, 'User Data', 'Default', 'temp');
+  }
+  return null;
+}
+
+/**
+ * Clean up old temporary files in the app's temp directory
+ * Should be called once at MCP server startup
+ * @param appName The application name for determining the support directory
+ * @param maxAgeMs Maximum age in milliseconds (default: 2 hours)
+ */
+async function cleanupOldTempFiles(appName: string, maxAgeMs: number = 2 * 60 * 60 * 1000): Promise<void> {
+  const tempBaseDir = await getTempBaseDir(appName);
+  if (!tempBaseDir) {
+    return;
+  }
+
+  try {
+    const subDirs = await fsp.readdir(tempBaseDir);
+    const now = Date.now();
+
+    for (const subDir of subDirs) {
+      const subDirPath = path.join(tempBaseDir, subDir);
+      try {
+        const stat = await fsp.stat(subDirPath);
+        if (!stat.isDirectory()) continue;
+
+        const files = await fsp.readdir(subDirPath);
+        for (const file of files) {
+          const filePath = path.join(subDirPath, file);
+          try {
+            const fileStat = await fsp.stat(filePath);
+            if (fileStat.isFile() && (now - fileStat.mtimeMs > maxAgeMs)) {
+              await fsp.unlink(filePath);
+            }
+          } catch {
+            // Ignore errors for individual files
+          }
+        }
+      } catch {
+        // Ignore errors for subdirectories
+      }
+    }
+  } catch {
+    // Ignore if temp directory doesn't exist
+  }
+}
+
+/**
+ * Get a temporary file path for storing generated files (QR codes, screenshots, etc.)
+ * Files are organized in subdirectories for isolation.
+ * @param appName The application name for determining the support directory
+ * @param subDir Subdirectory for file isolation (e.g., 'preview-qrcode', 'screenshot')
  * @param prefix Optional prefix for the filename (default: 'temp')
  * @param extension Optional file extension (default: 'txt')
  * @returns A unique temporary file path
  */
-async function getTemporaryFilePath(appName: string, prefix: string = 'temp', extension: string = 'txt'): Promise<string> {
-  const appSupportPath = await getAppSupportPath(appName);
-  const platform = os.platform();
-  if (appSupportPath) {
-    if (platform === 'darwin') {
-      return path.join(appSupportPath, 'Default', `${prefix}-${Date.now()}.${extension}`);
-    } else if (platform === 'win32') {
-      return path.join(appSupportPath, 'User Data', 'Default', `${prefix}-${Date.now()}.${extension}`);
-    }
+async function getTemporaryFilePath(
+  appName: string,
+  subDir: string,
+  prefix: string = 'temp',
+  extension: string = 'txt'
+): Promise<string> {
+  const tempBaseDir = await getTempBaseDir(appName);
+  if (!tempBaseDir) {
+    return "";
   }
-  return "";
+
+  const baseDir = path.join(tempBaseDir, subDir);
+
+  // Ensure directory exists
+  try {
+    await fsp.mkdir(baseDir, { recursive: true });
+  } catch {
+    // Ignore if directory already exists
+  }
+
+  return path.join(baseDir, `${prefix}-${Date.now()}.${extension}`);
 }
 
 /**
@@ -357,4 +433,4 @@ async function executeCliCommand(cliPath: string, args: string[]): Promise<{ std
   return execFileP(cliPath, args, { encoding: 'utf8' });
 }
 
-export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath, getTemporaryFilePath, executeCliCommand }
+export { findAppOnMacOrWin, launchApp, sleep, getCliPath, getAppSupportPath, getTemporaryFilePath, executeCliCommand, cleanupOldTempFiles }

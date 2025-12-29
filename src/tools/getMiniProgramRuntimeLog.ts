@@ -50,7 +50,7 @@ export const getMiniProgramRuntimeLogTool = {
       if (needScreen) {
         // Determine file extension based on format
         const fileExtension = screenshotFormat === 'base64' ? 'txt' : 'png';
-        screenshotPath = await getTemporaryFilePath(appName, 'screenshot', fileExtension);
+        screenshotPath = await getTemporaryFilePath(appName, 'screenshot', 'screen', fileExtension);
         if (!screenshotPath) {
           return {
             content: [{
@@ -143,16 +143,7 @@ export const getMiniProgramRuntimeLogTool = {
         }],
         structuredContent: output
       };
-    } finally {
-      // Clean up temporary screenshot file if it was created
-      // if (needScreen && screenshotPath && fs.existsSync(screenshotPath)) {
-      //   try {
-      //     fs.unlinkSync(screenshotPath);
-      //     log("Cleaned up screenshot file:", screenshotPath);
-      //   } catch (cleanupError) {
-      //     log("Failed to clean up screenshot file:", cleanupError);
-      //   }
-      // }
     }
+    // Note: No manual cleanup needed - getTemporaryFilePath automatically cleans files older than 2 hours
   }
 };

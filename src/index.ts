@@ -4,6 +4,7 @@ import { version } from '../package.json';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { appName, mcpName } from './brand';
+import { cleanupOldTempFiles } from './utils';
 
 // Import all tools
 import {
@@ -52,6 +53,9 @@ registerTool(uploadMiniprogramTool);
 registerTool(getMiniProgramRuntimeLogTool);
 registerTool(setCompileConditionTool);
 registerTool(deleteCompileConditionTool);
+
+// Clean up old temp files (>2h) on startup
+cleanupOldTempFiles(appName);
 
 const transport = new StdioServerTransport();
 server.connect(transport);

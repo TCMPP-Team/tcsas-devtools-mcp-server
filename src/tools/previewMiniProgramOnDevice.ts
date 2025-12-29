@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import fs from 'fs';
 import log from '../utils/log';
-import { getCliPath, sleep, getTemporaryFilePath, executeCliCommand } from '../utils/index';
+import { getCliPath, getTemporaryFilePath, executeCliCommand } from '../utils/index';
 import { ImageContent } from '@modelcontextprotocol/sdk/types';
 import { appName, deviceAppName } from '../brand';
 
@@ -30,7 +30,7 @@ export const previewMiniProgramOnDeviceTool = {
 
     let previewQrCodePath: string | null = null;
     try {
-      previewQrCodePath = await getTemporaryFilePath(appName, 'preview-qrcode', 'txt');
+      previewQrCodePath = await getTemporaryFilePath(appName, 'preview-qrcode', 'qrcode', 'txt');
       if (!previewQrCodePath) {
         return {
           content: [{
@@ -52,7 +52,7 @@ export const previewMiniProgramOnDeviceTool = {
         };
       }
 
-      await sleep(180); // TODO check IDE Logic
+      // await sleep(180); // TODO check IDE Logic
 
       if (!fs.existsSync(previewQrCodePath)) {
         return {
@@ -81,16 +81,7 @@ export const previewMiniProgramOnDeviceTool = {
           text: `Failed to generate preview QR code. This can happen if there is an issue with the miniprogram project itself. Please try opening the project in the ${appName} IDE to diagnose the issue. Error: ${(error as Error).message}`
         }]
       };
-    } finally {
-      // Clean up temporary QR code file
-      if (previewQrCodePath && fs.existsSync(previewQrCodePath)) {
-        try {
-          fs.unlinkSync(previewQrCodePath);
-          // log("Cleaned up preview QR code file:", previewQrCodePath);
-        } catch (cleanupError) {
-          // log("Failed to clean up preview QR code file:", cleanupError);
-        }
-      }
     }
+    // Note: No manual cleanup needed - getTemporaryFilePath automatically cleans files older than 2 hours
   }
 };
