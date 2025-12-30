@@ -1,14 +1,14 @@
-import { ZodRawShape } from 'zod';
 import { ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { AnySchema, ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat';
 
 /**
  * MCP Tool definition interface
  */
-export interface McpToolDefinition {
+export interface McpToolDefinition<OutputArgs extends ZodRawShapeCompat | AnySchema, InputArgs extends undefined | ZodRawShapeCompat | AnySchema = undefined> {
   name: string;
   title: string;
   description: string;
-  inputSchema?: ZodRawShape;
-  outputSchema?: ZodRawShape;
-  handler: ToolCallback<ZodRawShape>;
+  inputSchema?: InputArgs;
+  outputSchema?: OutputArgs;
+  handler: ToolCallback<InputArgs>;
 }

@@ -17,6 +17,7 @@ import {
   deleteCompileConditionTool,
   McpToolDefinition
 } from './tools';
+import { AnySchema, ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat';
 
 const server = new McpServer({
   title: mcpName,
@@ -32,7 +33,7 @@ const server = new McpServer({
 /**
  * Helper function to register a tool
  */
-function registerTool(tool: McpToolDefinition) {
+function registerTool<OutputArgs extends ZodRawShapeCompat | AnySchema, InputArgs extends undefined | ZodRawShapeCompat | AnySchema = undefined>(tool: McpToolDefinition<OutputArgs, InputArgs>) {
   server.registerTool(
     tool.name,
     {
