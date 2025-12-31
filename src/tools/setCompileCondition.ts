@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import z from 'zod/v3';
 import log from '../utils/log';
 import { getCliPath, executeCliCommand } from '../utils/index';
 import { appName } from '../brand';

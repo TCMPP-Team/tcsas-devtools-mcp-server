@@ -17,6 +17,8 @@ import {
   deleteCompileConditionTool,
   McpToolDefinition
 } from './tools';
+import { AnySchema, ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat';
+import { migrateWechatPrompt, PromptDefinition } from './prompts';
 
 const server = new McpServer({
   title: mcpName,
@@ -32,7 +34,7 @@ const server = new McpServer({
 /**
  * Helper function to register a tool
  */
-function registerTool(tool: McpToolDefinition) {
+function registerTool<OutputArgs extends ZodRawShapeCompat | AnySchema, InputArgs extends undefined | ZodRawShapeCompat | AnySchema = undefined>(tool: McpToolDefinition<OutputArgs, InputArgs>) {
   server.registerTool(
     tool.name,
     {
@@ -45,6 +47,17 @@ function registerTool(tool: McpToolDefinition) {
   );
 }
 
+function registerPrompt<Args extends ZodRawShapeCompat>(prompt: PromptDefinition<Args>) {
+  server.registerPrompt(
+    prompt.name,
+    {
+      title: prompt.title,
+      description: prompt.description,
+    },
+    prompt.handler
+  );
+}
+
 // Register all tools
 registerTool(launchIdeTool);
 registerTool(checkIdeInstalledTool);
@@ -53,6 +66,9 @@ registerTool(uploadMiniprogramTool);
 registerTool(getMiniProgramRuntimeLogTool);
 registerTool(setCompileConditionTool);
 registerTool(deleteCompileConditionTool);
+
+// Register all prompts
+registerPrompt(migrateWechatPrompt);
 
 // Clean up old temp files (>2h) on startup
 cleanupOldTempFiles(appName);

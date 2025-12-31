@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import z from 'zod/v3';
 import fs from 'fs';
 import log from '../utils/log';
 import { getCliPath, getTemporaryFilePath, executeCliCommand } from '../utils/index';
