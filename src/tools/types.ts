@@ -1,4 +1,4 @@
-import { ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { PromptCallback, ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { AnySchema, ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat';
 
 /**
@@ -11,4 +11,12 @@ export interface McpToolDefinition<OutputArgs extends ZodRawShapeCompat | AnySch
   inputSchema?: InputArgs;
   outputSchema?: OutputArgs;
   handler: ToolCallback<InputArgs>;
+}
+
+export interface PromptDefinition<Args extends ZodRawShapeCompat> {
+  name: string;
+  title?: string;
+  description?: string;
+  argsSchema?: Args;
+  handler: PromptCallback<Args>;
 }
