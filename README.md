@@ -47,11 +47,11 @@ You can integrate this server with any AI assistant that supports custom MCP ser
 
     ```json
     {
-      "tcsas-devtools-mcp-server": {
+      "sas-devtools-mcp-server": {
         "command": "npx",
         "args": [
           "-y",
-          "tcsas-devtools-mcp-server@latest"
+          "sas-devtools-mcp-server@latest"
         ]
       }
     }

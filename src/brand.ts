@@ -1,14 +1,14 @@
 /**
  * App (in Android & iOS)
  */
-const deviceAppName = "TCSAS";
+const deviceAppName = "SAS";
 /**
  * IDE name
  */
-const appName = "TCSAS-Devtools";
+const appName = "SAS-Devtools";
 /**
  * MCP tool name
  */
-const mcpName = "tcsas-devtools-mcp-server";
+const mcpName = "sas-devtools-mcp-server";
 
 export { appName, mcpName, deviceAppName };
