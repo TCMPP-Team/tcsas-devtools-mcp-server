@@ -59,7 +59,7 @@ You can integrate this server with any AI assistant that supports custom MCP ser
 
     **Illustration**: (A screenshot of the Cursor settings panel could be like this, showing the user entering the command in the mcp.json)
 
-    ![Cursor MCP Configuration](https://github.com/TCMPP-Team/tcsas-devtools-mcp-server/raw/main/images/cursor.png)
+    ![Cursor MCP Configuration](https://raw.githubusercontent.com/TCMPP-Team/tcsas-devtools-mcp-server/feature/exp-sas/images/cursor.png)
 
 5.  **Connect and Start Using**: After adding, Cursor will connect to your local server. Now you can interact with it in the chat. For example, you can type:
 
