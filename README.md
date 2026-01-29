@@ -35,33 +35,42 @@ Settings - Security - Enable
 
 **Ensure the above steps are completed. Then you can configure the MCP server in your Code Agent and start using it.**
 
-## 🤖 How to Use in Cursor
+## 🤖 How to Use in Cursor（Take Cursor and Codebuddy as examples）
 
-You can integrate this server with any AI assistant that supports custom MCP servers. Here are the steps to configure it in Cursor:
 
-1.  **Open Cursor Settings**: In Cursor, find the settings for AI integration. This is usually located in `Settings` > `Tools & MCP` or a similar configuration area for managing AI providers.
+You can integrate this server with any AI assistant that supports custom MCP servers. Here are the steps to configure it in Cursor or CodeBuddy:
 
-2.  **Add Custom MCP Service**: Look for an option like "Add Model Context Provider" or "MCP Server" and click "Add".
+1.  **Open Cursor Settings**: In Cursor, find the settings for AI integration. This is usually located in `Settings` > `Tools & MCP` or a similar configuration area for managing AI providers. In Codebuddy, locate the settings menu, it usually at the gear icon in the upper right corner.
 
-3.  **Enter Command**: For example:
+    ![CodeBuddy](https://raw.githubusercontent.com/TCMPP-Team/tcsas-devtools-mcp-server/feature/exp/images/codebuddy.png)
+
+    ![Cursor](https://raw.githubusercontent.com/TCMPP-Team/tcsas-devtools-mcp-server/feature/exp/images/cursor-ide.png)
+
+
+2.  **Add Custom MCP Service**: In Cursor, look for an option like "Add Model Context Provider" or "MCP Server" and click "Add". In Codebuddy, look for an option called "Add MCP" and click on it.
+
+3.  **Add TCSAS MCP Server configuration statement**: You can directly copy the statement below to add it:
 
     ```json
     {
-      "sas-devtools-mcp-server": {
-        "command": "npx",
-        "args": [
-          "-y",
-          "sas-devtools-mcp-server@latest"
-        ]
+      "mcpServers": {
+        "tcsas-devtools-mcp-server": {
+          "command": "npx",
+          "args": [
+              "-y",
+              "tcsas-devtools-mcp-server@latest"
+          ]
+        } 
       }
     }
     ```
 
-    **Illustration**: (A screenshot of the Cursor settings panel could be like this, showing the user entering the command in the mcp.json)
+    **Illustration**: (A screenshot of the settings panel could be like this, showing the user entering the command in the mcp.json)
 
-    ![Cursor MCP Configuration](https://raw.githubusercontent.com/TCMPP-Team/tcsas-devtools-mcp-server/feature/exp-sas/images/cursor.png)
 
-5.  **Connect and Start Using**: After adding, Cursor will connect to your local server. Now you can interact with it in the chat. For example, you can type:
+    ![Cursor MCP Configuration](https://raw.githubusercontent.com/TCMPP-Team/tcsas-devtools-mcp-server/feature/exp/images/cursor.png)
+
+4.  **Connect and Start Using**: After adding, AI IDE will connect to your local server. Now you can interact with it in the chat. For example, you can type:
 
     > "Launch TCSAS-Devtools and open my project at `/Users/me/projects/my-miniprogram`."
 
