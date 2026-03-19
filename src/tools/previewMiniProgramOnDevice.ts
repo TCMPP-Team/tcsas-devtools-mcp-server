@@ -39,7 +39,7 @@ export const previewMiniProgramOnDeviceTool = {
           }]
         };
       }
-      const { stdout, stderr } = await executeCliCommand(cliPath, ['--preview', path, '--preview-qr-output', `base64@${encodeURIComponent(previewQrCodePath)}`]);
+      const { stdout, stderr } = await executeCliCommand(cliPath, ['--preview', encodeURIComponent(path), '--preview-qr-output', `base64@${encodeURIComponent(previewQrCodePath)}`]);
       log("previewMiniProgramOnDeviceTool stdout:", stdout);
 
       if (stderr) {

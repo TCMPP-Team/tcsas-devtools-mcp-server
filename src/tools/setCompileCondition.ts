@@ -67,7 +67,7 @@ export const setCompileConditionTool = {
         conditionStr += '@@1';
       }
 
-      const args = ['--set-compile', path, '--compile-condition', conditionStr];
+      const args = ['--set-compile', encodeURIComponent(path), '--compile-condition', conditionStr];
 
       log("Setting compile condition:", conditionStr);
       const { stdout, stderr } = await executeCliCommand(cliPath, args);

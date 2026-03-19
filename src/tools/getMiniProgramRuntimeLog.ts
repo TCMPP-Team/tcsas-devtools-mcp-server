@@ -39,7 +39,7 @@ export const getMiniProgramRuntimeLogTool = {
     let screenshotPath: string | null = null;
     try {
       // Build CLI command arguments
-      const args = ['--run-log', path];
+      const args = ['--run-log', encodeURIComponent(path)];
 
       // Add log level filter if specified
       if (logLevel && logLevel.length > 0) {
