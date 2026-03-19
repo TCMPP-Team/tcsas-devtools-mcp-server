@@ -29,7 +29,7 @@ export const uploadMiniprogramTool = {
       try {
         const { stdout, stderr } = await executeCliCommand(
           cliPath,
-          ['-u', `${version}@${path}`, '--upload-desc', describeMessage]
+          ['-u', `${version}@${encodeURIComponent(path)}`, '--upload-desc', describeMessage]
         );
         log("Upload stdout:", stdout);
         log("Upload stderr:", stderr);

@@ -39,7 +39,7 @@ export const deleteCompileConditionTool = {
     }
 
     try {
-      const args = ['--del-compile', path, '--condition-name', conditionName];
+      const args = ['--del-compile', encodeURIComponent(path), '--condition-name', conditionName];
 
       log("Deleting compile condition:", conditionName);
       const { stdout, stderr } = await executeCliCommand(cliPath, args);
